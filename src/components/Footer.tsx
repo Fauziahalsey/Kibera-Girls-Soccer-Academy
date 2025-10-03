@@ -18,7 +18,7 @@ const Footer = () => {
             <p className="text-primary-foreground/80 mb-4">
               Empowering young women with quality education and building future female leaders 
               through excellence in academics, sports, and character development in Kibera community.
-            </p>
+            </p> 
             <div className="flex space-x-4 mt-4">
               <a href="https://www.instagram.com/kiberagirls_soccer?igsh=MWJ2ejIxd2N3ZGdrOQ==" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
                 <FaInstagram className="h-6 w-6 text-black hover:text-pink-500 transition-colors" />
