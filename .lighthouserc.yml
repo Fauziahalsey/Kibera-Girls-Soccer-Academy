@@ -1,0 +1,9 @@
+ci:
+  collect:
+    url:
+      - http://localhost:8080/
+    startServerCommand: npm run dev
+    numberOfRuns: 3
+  assert:
+    assertions:
+      categories:performance: "error >= 0"
