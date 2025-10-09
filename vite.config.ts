@@ -6,6 +6,8 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  // Use relative base so the built site can be served from subfolders (common on cPanel)
+  base: './',
   server: {
     host: "::",
     port: 8080,
