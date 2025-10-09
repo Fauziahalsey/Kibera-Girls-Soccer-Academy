@@ -72,3 +72,27 @@ To connect a domain, navigate to Project > Settings > Domains and click Connect 
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
 # Kibera-Girls-Soccer-Academy
+
+## Performance checks (Lighthouse)
+
+You can run Lighthouse CI locally or via GitHub Actions which is included in `.github/workflows/lhci.yml`.
+
+Run locally:
+
+```bash
+npm ci
+npm run perf
+```
+
+This will run Lighthouse against `http://localhost:8080` by starting the dev server or serving `dist/` depending on configuration.
+
+## Deploy to cPanel (static build)
+
+1. Build:
+
+```bash
+npm run build
+```
+
+2. Upload the contents of `dist/` to your cPanel document root (e.g., `public_html/`), and ensure `.htaccess` and `index.html` are present.
+
