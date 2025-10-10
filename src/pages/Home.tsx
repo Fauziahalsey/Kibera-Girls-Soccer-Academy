@@ -38,10 +38,12 @@ We Educate, Inspire and Empower girls </p>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-foreground mb-4">Our History</h2>
-            <p className="mb-6 text-black text-2xl font-semibold leading-relaxed text-justify max-w-3xl mx-auto">
-             Abdul Kassim, the visioanary behind KGSA, began his journey in 2002, by forming a girls' soccer team to engage teenage girls in productive activities and keep them off the streets. He soon lost so many girls since soccer alone could not address the deeiper issues of street life. Recognizing he power of education especially in the streets, Abdul set out to establish a school. Strategic networking, securing the right connections and the love he had for these girls, he raised enough funds to build a one room school in 2006 and offered free high school to thirteen girls who joined form one.  The school had only 2 volunteer teachers who taught all subjects.
-The school gained more visibility and in 2007, one more class was constructed.
-Through financial and technical resources, KGSA foundation enables the school to support 150 girls, employed 9 teachers and offers a variety of extra curricular activities, making lasting difference in the community.
+            <p className="mb-6 text-black text-lg font-normal leading-relaxed text-justify max-w-3xl mx-auto"> 
+              KGSA began as a simple idea: use sport to keep girls safe and give them hope. In 2002, a community coach started a girls' soccer team to provide structure and opportunity for young people in Kibera. He soon realised that sport alone wasn't enough — education offered a lasting solution.
+
+              With community support the project grew into a one-room school in 2006, opening its doors to thirteen free high-school students. From those humble beginnings, KGSA has expanded steadily: building classrooms, growing its teaching team, and broadening programs that combine academics, life skills, and sport.
+
+              Today KGSA proudly supports hundreds of students, empowers alumni to pursue higher education and careers, and continues to transform lives across the community.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
@@ -149,7 +151,7 @@ Through financial and technical resources, KGSA foundation enables the school to
           <Heart className="h-16 w-16 mx-auto mb-6 text-accent" />
           <h2 className="text-4xl font-bold mb-4">Join Our Movement</h2>
           <p className="text-xl mb-8 opacity-90">
-            Kibera Girls Soccer is a free public girls' boarding school whose mandate is to offer the approved National Curriculum in a conducive environment for learning, use of skills,holistic learning and teaching to enable the students to be creative, responsible and ready to serve humanity
+            Kibera Girls Soccer is a private girls' boarding school whose mandate is to offer the approved National Curriculum in a conducive environment for learning, use of skills,holistic learning and teaching to enable the students to be creative, responsible and ready to serve humanity
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" variant="secondary" asChild>
