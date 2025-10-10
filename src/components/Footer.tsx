@@ -21,16 +21,16 @@ const Footer = () => {
             </p> 
             <div className="flex space-x-4 mt-4">
               <a href="https://www.instagram.com/kiberagirls_soccer?igsh=MWJ2ejIxd2N3ZGdrOQ==" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-                <FaInstagram className="h-6 w-6 text-black hover:text-pink-500 transition-colors" />
+                <FaInstagram className="h-6 w-6 text-white hover:text-pink-500 transition-colors" />
               </a>
               <a href="http://www.linkedin.com/in/kibera-girls-soccer-209a47376" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
-                <FaLinkedin className="h-6 w-6 text-black hover:text-blue-700 transition-colors" />
+                <FaLinkedin className="h-6 w-6 text-white hover:text-blue-700 transition-colors" />
               </a>
               <a href="https://www.youtube.com/@KiberaGirlsSoccerAcademy" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
-                <FaYoutube className="h-6 w-6 text-black hover:text-red-600 transition-colors" />
+                <FaYoutube className="h-6 w-6 text-white hover:text-red-600 transition-colors" />
               </a>
               <a href="https://www.facebook.com/share/19tyQLdw6k/" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-                <FaFacebook className="h-6 w-6 text-black hover:text-blue-600 transition-colors" />
+                <FaFacebook className="h-6 w-6 text-white hover:text-blue-600 transition-colors" />
               </a>
             </div>
           </div>
@@ -51,16 +51,16 @@ const Footer = () => {
             <h3 className="font-semibold text-lg mb-4">Contact Us</h3>
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
-                <Mail className="h-4 w-4" />
-                <span className="text-primary-foreground/80">kiberagirlssoccer.org</span>
+                <Mail className="h-4 w-4 text-white/80" />
+                <span className="text-white/80">kiberagirlssoccer.org</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Phone className="h-4 w-4" />
-                <span className="text-primary-foreground/80">+254 716076799</span>
+                <Phone className="h-4 w-4 text-white/80" />
+                <span className="text-white/80">+254 716076799</span>
               </div>
               <div className="flex items-center space-x-2">
-                <MapPin className="h-4 w-4" />
-                <span className="text-primary-foreground/80">Nairobi, Kenya</span>
+                <MapPin className="h-4 w-4 text-white/80" />
+                <span className="text-white/80">Nairobi, Kenya</span>
               </div>
             </div>
           </div>

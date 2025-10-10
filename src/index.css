@@ -107,7 +107,7 @@ All colors MUST be HSL.
   }
 
   body {
-    color: #000;
+    color: hsl(var(--foreground));
   }
 }
 

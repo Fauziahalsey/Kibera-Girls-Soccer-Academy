@@ -146,6 +146,17 @@ The protection of children is an integral component of KGSA’s approach:
         <section className="mb-16">
           <h2 className="text-3xl font-bold text-center mb-8">Partner Organizations</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            <Card className="shadow-card">
+              <CardHeader>
+                <Handshake className="h-8 w-8 text-primary mb-2" />
+                <CardTitle>KGSA FOUNDATION</CardTitle>
+              </CardHeader>
+              <CardContent>
+            <img src={kgsaFoundationLogo} alt="KGSA Foundation" className="w-full h-58 object-cover rounded-lg shadow-card" />
+              </CardContent>
+            </Card>
+            
             <Card className="shadow-card">
               <CardHeader>
                 <Handshake className="h-8 w-8 text-primary mb-2" />
@@ -191,15 +202,7 @@ The protection of children is an integral component of KGSA’s approach:
                 <img src={skyengImage} alt="Skyeng" className="w-full h-58 object-cover rounded-lg shadow-card" />
               </CardContent>
             </Card>
-            <Card className="shadow-card">
-              <CardHeader>
-                <Handshake className="h-8 w-8 text-primary mb-2" />
-                <CardTitle>KGSA FOUNDATION</CardTitle>
-              </CardHeader>
-              <CardContent>
-            <img src={kgsaFoundationLogo} alt="KGSA Foundation" className="w-full h-58 object-cover rounded-lg shadow-card" />
-              </CardContent>
-            </Card>
+          
 
             <Card className="shadow-card">
               <CardHeader>
