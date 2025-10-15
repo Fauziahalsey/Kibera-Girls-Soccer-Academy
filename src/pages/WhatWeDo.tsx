@@ -207,7 +207,7 @@ const WhatWeDo = () => {
                 </CardContent>
                      <div className="flex justify-center mt-6">
                   <a
-                    href="https://drive.google.com/file/d/1R8b4_nyUWoB9psiM9eKWmK2EeVFLXOoe/view?usp=drive_link, https://drive.google.com/file/d/14Trks9Q5YqrFeXGNJyESCQ26dUkEJ9kf/view?usp=drive_link, https://drive.google.com/file/d/1a6uf8VJ5D991ZtPgYRfXni9Jmhgk0oRd/view?usp=drive_link, https://drive.google.com/file/d/11Ui4-Sr9yUiQlmiWs8jh4C99OOho8Hqv/view?usp=drive_link, https://drive.google.com/file/d/1Jj16_Fk1PSteRUOdUY8CZ3WqQpqMjurI/view?usp=drive_link, https://drive.google.com/file/d/1sgHQyQduaKlhJ66_Xx5H7tV4blsKYpOK/view?usp=drive_link, https://drive.google.com/file/d/18wYTo5_gpcT4Bk23XDC1dIjjlpuyBF31/view?usp=drive_link, https://drive.google.com/file/d/1vmo_YB34H_IC3uWECqWxqB_QxNtFFzJU/view?usp=drive_link, https://drive.google.com/file/d/1bJdDizCPUqPlTlcowc5UfY4dvGYfa7nA/view?usp=drive_link, https://drive.google.com/file/d/1CnLLDDOD1vlTsSprYZLIS_C9jzvmcTlX/view?usp=drive_link, https://drive.google.com/file/d/1MMrFMVrAsBuqdCTjhAjdo3GQAO5kzyK7/view?usp=drive_link, https://drive.google.com/file/d/17FZgWXSVXTQAfuiOq6kWZIrgdB99up1r/view?usp=drive_link, https://drive.google.com/file/d/1rhIoUJFtDMBB9-vwqtwahtilGIe2K9rF/view?usp=drive_link, https://drive.google.com/file/d/1elifv7CgoJXCZaghyNWiUxxjsF84_YQn/view?usp=drive_link, https://drive.google.com/file/d/1JCapzZCd9bIFVflwpnYShShtEtGrRw7c/view?usp=drive_link"
+                    href="https://drive.google.com/drive/folders/14LI1-VlFPOuHij9I3t83VXPWlyc3AA5F?usp=drive_link"
                     className="inline-block px-6 py-2 bg-primary text-white font-semibold rounded-lg shadow hover:bg-primary/80 transition-colors"
                     style={{ textDecoration: 'none' }}
                     target="_blank"
@@ -348,23 +348,7 @@ const WhatWeDo = () => {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-card">
-                <CardContent className="p-0">
-                  <img src={sewing} alt="Girls learning sewing" className="w-full h-62 object-cover" />
-                  <div className="p-4">
-                    <div className="flex items-center mb-2">
-                      <Scissors className="h-6 w-6 text-primary mr-2" />
-                      <CardTitle className="text-lg">Sewing & Tailoring</CardTitle>
-                    </div>
-                    <CardDescription>
-                      Practical life skills in fashion design and garment construction
-                    </CardDescription>
-                    <div className="mt-3">
-                      <Badge variant="secondary">Fashion Show</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            
 
               <Card className="shadow-card">
                 <CardContent className="p-0">

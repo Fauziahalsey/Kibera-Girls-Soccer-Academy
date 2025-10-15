@@ -30,6 +30,7 @@ import libraryUpgraded from "@/assets/library.jpeg";
 import turf from "@/assets/turf.jpeg";
 import borehole from "@/assets/borehole.jpg";
 import computerUpgraded from "@/assets/computer.jpg";
+// import computer from "@/assets/computer-lab.jpg"
 import scienceLab from "@/assets/science-lab.jpg";
 import classroom from "@/assets/classroom.jpg";
 
@@ -44,12 +45,12 @@ const Achievements = () => {
   const photos = [
   { title: "Director", category: "Staff", src: director, link: director },
     { title: "Computer Lab", category: "Infrastructure", src: computerLab, link: computerLab },
-    { title: "Drama Club", category: "Arts", src: dramaClub, link: dramaClub },
+    { title: "sewing Club", category: "skills", src: dramaClub, link: dramaClub },
     { title: "Girls Netball", category: "Sports", src: girlsNetball, link: girlsNetball },
-    { title: "Graduation Day", category: "Ceremony", src: graduation, link: graduation },
+    { title: "Examination Day", category: "exams", src: graduation, link: graduation },
     { title: "Library", category: "Infrastructure", src: library, link: library },
     { title: "Nutrition Program", category: "Wellness", src: nutrition, link: nutrition },
-    { title: "Sewing Class", category: "Skills", src: sewingClass, link: sewingClass },
+    { title: "laboratory", category: "experiements", src: sewingClass, link: sewingClass },
   ];
 
   return (
