@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-  "dev": "vite",
-  "build": "vite build --outDir public",
+    "dev": "vite",
+    "build": "vite build --outDir public",
     "serve-dist": "npx http-server ./dist -p 8080",
     "perf": "lhci autorun --upload.target=temporary-public-storage || npx lhci autorun --upload.target=temporary-public-storage",
     "build:dev": "vite build --mode development",
