@@ -97,7 +97,7 @@ const WhatWeDo = () => {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-card">
+              {/* <Card className="shadow-card">
                 <CardHeader>
                   <Gamepad2 className="h-12 w-12 text-primary mb-4" />
                   <CardTitle>Indoor Games</CardTitle>
@@ -114,7 +114,7 @@ const WhatWeDo = () => {
                     <Badge variant="secondary">Badminton</Badge>
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
 
               <Card className="shadow-card">
                 <CardHeader>
