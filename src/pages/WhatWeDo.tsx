@@ -318,21 +318,7 @@ const WhatWeDo = () => {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-card">
-                <CardHeader>
-                  <Music className="h-12 w-12 text-primary mb-4" />
-                  <CardTitle>Music Club</CardTitle>
-                  <img src={drama} alt="Students in classroom" className="w-full h-65 object-cover rounded-lg shadow-card" />
-
-                  <CardDescription>
-                    Musical talents development through choir, instruments, and composition
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Badge variant="secondary">School Choir</Badge>
-                </CardContent>
-              </Card>
-
+    
               <Card className="shadow-card">
                 <CardHeader>
                   <Heart className="h-12 w-12 text-primary mb-4" />
