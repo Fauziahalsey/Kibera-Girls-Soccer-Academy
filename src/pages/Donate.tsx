@@ -21,9 +21,9 @@ const Donate = () => {
   const [customAmount, setCustomAmount] = useState("");
 
   const donationOptions = [
-    { amount: 1000, impact: "Provides meals for 1 student for a week" },
+    { amount: 2000, impact: "Provides meals for 1 student for a week" },
     { amount: 5000, impact: "Buys textbooks for 5 students" },
-    { amount: 10000, impact: "Sponsors 1 student's monthly school fees" },
+    // { amount: 10000, impact: "Sponsors 1 student's monthly school fees" },
     { amount: 25000, impact: "Funds a student's full term education" },
     { amount: 50000, impact: "Provides computer equipment for the lab" },
     { amount: 100000, impact: "Sponsors laboratory equipment upgrade" },

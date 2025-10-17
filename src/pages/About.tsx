@@ -68,15 +68,15 @@ const About = () => {
 
   ];
 
-  const boardMembers = [
-    { name: "Zawadi Kitsao ", position: "Chairperson", background: "" },
-    { name: "Janet Njanja", position: "Treasurer", background: "" },
-    { name: "Abdul Kassim", position: "Advisor", background: "" },
-    { name: "Claris Akinyi", position: "Secretary", background: "" },
-    { name: "John Wali", position: "strategic director", background: "" },
-    { name: "Asha Jaffar", position: "Communications director", background: "" },
-
+   const boardMembers = [
+    { name: "Zawadi Kitsao", position: "Chairperson", linkedin: "https://www.linkedin.com/in/zawadi-kitsao-39608b23/" },
+    { name: "Janet Njanja", position: "Treasurer", linkedin: "https://www.linkedin.com/in/janet-njanja-a2371588/" },
+    { name: "Abdul Kassim", position: "Advisor", linkedin: "https://www.linkedin.com/in/abdul-kassim-3001a01aa/" },
+    { name: "Claris Akinyi", position: "Secretary", linkedin: "https://www.linkedin.com/in/claris-akinyi-b097b0359/" },
+    { name: "John Wali", position: "Strategic Director", linkedin: "https://www.linkedin.com/in/john-wali-1835244b/" },
+    { name: "Asha Jaffar", position: "Communications Director", linkedin: "https://www.linkedin.com/in/asha-jaffar-harun-61600782/" },
   ];
+  
 
   return (
     <div className="min-h-screen py-16">
@@ -592,20 +592,32 @@ The protection of children is an integral component of KGSA’s approach:
           </div>
         </section>
 
-        {/* Board Members */}
-        <section>
-          <h2 className="text-3xl font-bold text-center mb-8">Board of Directors</h2>
+       {/* Board Members */}
+        <section aria-labelledby="board-heading" className="mb-16">
+          <h2 id="board-heading" className="text-3xl font-bold text-center mb-8">Board Members</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {boardMembers.map((member, index) => (
               <Card key={index} className="shadow-card">
                 <CardHeader>
-                  <Users className="h-8 w-8 text-primary mb-2" />
+                  <Users className="h-6 w-6 text-primary mb-2" />
                   <CardTitle className="text-lg">{member.name}</CardTitle>
                   <CardDescription>
                     <Badge variant="outline" className="mb-2">{member.position}</Badge>
-                    <p className="text-sm">{member.background}</p>
                   </CardDescription>
                 </CardHeader>
+                {member.linkedin && (
+                  <CardContent>
+                    <a
+                      href={member.linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline"
+                      aria-label={`${member.name} LinkedIn`}
+                    >
+                      View LinkedIn
+                    </a>
+                  </CardContent>
+                )}
               </Card>
             ))}
           </div>
