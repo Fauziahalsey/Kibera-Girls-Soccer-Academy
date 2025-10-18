@@ -3,11 +3,8 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
-
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  // Use relative base so the built site can be served from subfolders (common on cPanel)
-  base: './',
+  base: "./",
   server: {
     host: "::",
     port: 8080,
@@ -17,5 +14,8 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  build: {
+    outDir: "dist", // ✅ ensure this is distinct from 'public'
   },
 }));
