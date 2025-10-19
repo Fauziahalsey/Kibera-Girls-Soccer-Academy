@@ -1,7 +1,7 @@
 import { FaInstagram, FaLinkedin, FaYoutube, FaFacebook } from 'react-icons/fa';
 import { Mail, Phone, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
-import schoolLogo from "@/assets/school-logo.png";
+import schoolLogo from "@/assets/kgsa.png";
 
 
 const Footer = () => {
@@ -12,7 +12,7 @@ const Footer = () => {
           {/* School Info */}
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-3 mb-4">
-              <img src={schoolLogo} alt="Kibera Girls Soccer Academy Logo" className="h-10 w-10" />
+              <img src={schoolLogo} alt="Kibera Girls Soccer Academy Logo" className="h-10 w-15" />
               <span className="text-xl font-bold">Kibera Girls Soccer Academy</span>
             </div>
             <p className="text-primary-foreground/80 mb-4">

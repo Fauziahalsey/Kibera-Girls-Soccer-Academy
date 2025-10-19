@@ -38,8 +38,8 @@ We Educate, Inspire and Empower girls </p>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-foreground mb-4">Our History</h2>
-            <p className="mb-6 text-black text-lg font-normal leading-relaxed text-justify max-w-3xl mx-auto"> 
-              KGSA began as a simple idea: use sport to keep girls safe and give them hope. In 2002, a community coach started a girls' soccer team to provide structure and opportunity for young people in Kibera. He soon realised that sport alone wasn't enough — education offered a lasting solution.
+            <p className="mb-6 text-white text-lg font-normal leading-relaxed text-justify max-w-3xl mx-auto"> 
+              KGSA began as a simple idea: use sport to keep girls safe and give them hope. In 2002, a community coach started a girls' soccer team to provide structure and opportunity for young people in Kibera. He soon realised that sport alone wasn't enough  education offered a lasting solution.
 
               With community support the project grew into a one-room school in 2006, opening its doors to thirteen free high-school students. From those humble beginnings, KGSA has expanded steadily: building classrooms, growing its teaching team, and broadening programs that combine academics, life skills, and sport.
 
@@ -49,13 +49,13 @@ We Educate, Inspire and Empower girls </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div>
               <h3 className="text-2xl font-semibold mb-4 text-black">Building Excellence Since Day One</h3>
-              <p className="mb-6 text-black">
+              <p className="mb-6 text-white">
                 Our school was established with the fundamental belief that every young woman 
                 deserves access to quality education, regardless of her background. Located in the heart 
                 of Kibera, we have grown from a small institution to a comprehensive educational facility 
                 that serves female students from Form 1 to Form 4.
               </p>
-              <p className="text-black">
+              <p className="text-white">
                 We pride ourselves on creating an environment where academic achievement, 
                 character development, and personal growth go hand in hand. Our legacy 
                 is built on the success of our graduates who have gone on to become doctors, 
