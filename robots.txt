@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://kiberagirlssocceracademy.co.ke/sitemap.xml
