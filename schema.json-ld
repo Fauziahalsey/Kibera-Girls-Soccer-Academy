@@ -1,0 +1,20 @@
+{
+  "@context": "https://schema.org",
+  "@type": "EducationalOrganization",
+  "name": "Kibera Girls Soccer Academy",
+  "alternateName": "KGSA",
+  "url": "https://kiberagirlssocceracademy.co.ke/",
+  "logo": "https://kiberagirlssocceracademy.co.ke/assets/logo.png",
+  "description": "Kibera Girls Soccer Academy empowers girls through education, soccer, and mentorship programs in Kibera, Nairobi.",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Kibera",
+    "addressRegion": "Nairobi",
+    "addressCountry": "Kenya"
+  },
+  "sameAs": [
+    "https://www.facebook.com/KiberaGirlsSoccerAcademy",
+    "https://www.instagram.com/KGSA",
+    "https://twitter.com/KGSA"
+  ]
+}
