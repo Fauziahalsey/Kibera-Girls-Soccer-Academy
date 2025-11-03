@@ -16,6 +16,8 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    outDir: "dist", // ✅ ensure this is distinct from 'public'
+    outDir: "dist",
   },
+  // Add publicDir configuration
+  publicDir: 'public',
 }));
