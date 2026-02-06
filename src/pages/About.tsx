@@ -390,7 +390,7 @@ The protection of children is an integral component of KGSA’s approach:
               <CardContent className="p-0">
                 <img src={kiddyImage} alt="Khadija Abdullahi" className="w-full h-66 object-cover" />
                 <div className="p-4">
-                  <CardTitle className="text-lg">Khadija Abdullahi</CardTitle>
+                  <CardTitle className="text-lg">Khadija fatma Abdullahi</CardTitle>
                   <Badge variant="secondary" className="mb-2">Social media manager</Badge>
                    <p className="text-sm">Khadija grew up in Kibera and is a proud
                      graduate of KGSA’s 2015 Class. In 2017, she obtained a diploma in 
