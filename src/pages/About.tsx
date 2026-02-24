@@ -552,7 +552,7 @@ The protection of children is an integral component of KGSA’s approach:
               </CardContent>
             </Card>
 
-                 <Card key="jedidah-nderitu" className="shadow-card">
+                 {/* <Card key="jedidah-nderitu" className="shadow-card">
               <CardContent className="p-0">
                 <img src={jeddyImg} alt="Jedidah Nderitu" className="w-full h-66 object-cover" />
                 <div className="p-4">
@@ -567,7 +567,7 @@ The protection of children is an integral component of KGSA’s approach:
 
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
 
            
             {/* {staff.slice(3).map((member, index) => (
