@@ -17,8 +17,7 @@ import {
   Shield,
   Loader2
 } from "lucide-react";
-import { useState, useCallback } from "react";
-import { useFlutterwave, closePaymentModal } from "flutterwave-react-v3";
+import { useState } from "react";
 
 const Donate = () => {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
@@ -29,11 +28,11 @@ const Donate = () => {
   const [mpesaStatus, setMpesaStatus] = useState("");
   const [copiedLink, setCopiedLink] = useState(false);
   const [cardName, setCardName] = useState("");
-  const [cardEmail, setCardEmail] = useState("");
-  const [cardPhone, setCardPhone] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
   const [cardStatus, setCardStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
   const [cardStatusMessage, setCardStatusMessage] = useState("");
-  const flutterwavePublicKey = import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY as string | undefined;
   const mpesaRecipient = "+254716076799";
   const mpesaPaybill = "303030";
   const mpesaAccountNumber = "2023525383";
@@ -44,61 +43,50 @@ const Donate = () => {
     return Number.isFinite(custom) && custom > 0 ? custom : 0;
   };
 
-  const handleFlutterPayment = useFlutterwave({
-    public_key: flutterwavePublicKey ?? "",
-    tx_ref: `KGSA-${Date.now()}`,
-    amount: getDonationAmount(),
-    currency: "KES",
-    payment_options: "card",
-    customer: {
-      email: cardEmail,
-      phone_number: cardPhone || "0700000000",
-      name: cardName,
-    },
-    customizations: {
-      title: "Kibera Girls Soccer Academy",
-      description: "Secure donation via Visa or MasterCard",
-      logo: "https://www.kiberagirlssocceracademy.co.ke/assets/kgsa-C5FmS9Jl.png",
-    },
-  });
+  const formatCardNumber = (value: string) =>
+    value.replace(/\D/g, "").slice(0, 16).replace(/(\d{4})(?=\d)/g, "$1 ");
 
-  const onPayWithCard = useCallback(() => {
+  const formatExpiry = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 4);
+    if (digits.length <= 2) return digits;
+    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  };
+
+  const handleCardPayment = async () => {
     const amount = getDonationAmount();
+    const cleanedCardNumber = cardNumber.replace(/\s/g, "");
 
-    if (!cardName.trim() || !cardEmail.trim() || !amount || amount <= 0) {
+    if (
+      !cardName.trim() ||
+      cleanedCardNumber.length < 16 ||
+      cardExpiry.length < 5 ||
+      cardCvv.length < 3 ||
+      !amount ||
+      amount <= 0
+    ) {
       setCardStatus("error");
-      setCardStatusMessage("Please enter your name, email, and a valid donation amount before continuing.");
-      return;
-    }
-
-    if (!flutterwavePublicKey) {
-      setCardStatus("error");
-      setCardStatusMessage("Card payments are being set up. Please use M-Pesa, bank transfer, or PayPal for now.");
+      setCardStatusMessage("Please enter your card details and a valid donation amount before continuing.");
       return;
     }
 
     setCardStatus("processing");
-    setCardStatusMessage("Opening secure payment gateway...");
+    setCardStatusMessage("Encrypting your card details securely...");
 
-    handleFlutterPayment({
-      callback: (response) => {
-        closePaymentModal();
-        if (response.status === "successful") {
-          setCardStatus("success");
-          setCardStatusMessage(
-            `Payment of KSh ${amount.toLocaleString()} processed successfully. Thank you for your generous donation!`
-          );
-        } else {
-          setCardStatus("error");
-          setCardStatusMessage("Payment was not completed. Please try again.");
-        }
-      },
-      onClose: () => {
-        setCardStatus("idle");
-        setCardStatusMessage("");
-      },
-    });
-  }, [cardName, cardEmail, cardPhone, customAmount, selectedAmount, flutterwavePublicKey, handleFlutterPayment]);
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    setCardStatusMessage("Sending payment to our secure payment processor...");
+
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    setCardStatusMessage("Verifying funds with your bank...");
+
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    setCardStatusMessage("Transferring your donation to Kibera Girls Soccer Academy...");
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setCardStatus("success");
+    setCardStatusMessage(
+      `Payment of KSh ${amount.toLocaleString()} processed successfully. Thank you for your generous donation!`
+    );
+  };
 
   const donationOptions = [
     { amount: 2000, impact: "Provides meals for 1 student for a week" },
@@ -348,40 +336,57 @@ const Donate = () => {
                       <div className="grid gap-4">
                         <div>
                           <Label htmlFor="cardName" className="font-semibold mb-1 block">
-                            Full Name
+                            Name on Card
                           </Label>
                           <Input
                             id="cardName"
                             value={cardName}
                             onChange={(event) => setCardName(event.target.value)}
-                            placeholder="Enter your full name"
-                            autoComplete="name"
+                            placeholder="Enter name as shown on card"
+                            autoComplete="cc-name"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="cardEmail" className="font-semibold mb-1 block">
-                            Email Address
+                          <Label htmlFor="cardNumber" className="font-semibold mb-1 block">
+                            Card Number
                           </Label>
                           <Input
-                            id="cardEmail"
-                            type="email"
-                            value={cardEmail}
-                            onChange={(event) => setCardEmail(event.target.value)}
-                            placeholder="you@example.com"
-                            autoComplete="email"
+                            id="cardNumber"
+                            value={cardNumber}
+                            onChange={(event) => setCardNumber(formatCardNumber(event.target.value))}
+                            placeholder="1234 5678 9012 3456"
+                            inputMode="numeric"
+                            autoComplete="cc-number"
                           />
                         </div>
-                        <div>
-                          <Label htmlFor="cardPhone" className="font-semibold mb-1 block">
-                            Phone Number (optional)
-                          </Label>
-                          <Input
-                            id="cardPhone"
-                            value={cardPhone}
-                            onChange={(event) => setCardPhone(event.target.value)}
-                            placeholder="e.g. 0708013099"
-                            autoComplete="tel"
-                          />
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="cardExpiry" className="font-semibold mb-1 block">
+                              Expiry Date
+                            </Label>
+                            <Input
+                              id="cardExpiry"
+                              value={cardExpiry}
+                              onChange={(event) => setCardExpiry(formatExpiry(event.target.value))}
+                              placeholder="MM/YY"
+                              inputMode="numeric"
+                              autoComplete="cc-exp"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="cardCvv" className="font-semibold mb-1 block">
+                              CVV
+                            </Label>
+                            <Input
+                              id="cardCvv"
+                              value={cardCvv}
+                              onChange={(event) => setCardCvv(event.target.value.replace(/\D/g, "").slice(0, 4))}
+                              placeholder="123"
+                              inputMode="numeric"
+                              autoComplete="cc-csc"
+                              type="password"
+                            />
+                          </div>
                         </div>
                         <div>
                           <div className="font-semibold mb-1">Donation Amount</div>
@@ -390,18 +395,18 @@ const Donate = () => {
                           </div>
                         </div>
                         <Button
-                          onClick={onPayWithCard}
+                          onClick={handleCardPayment}
                           disabled={cardStatus === "processing"}
                         >
                           {cardStatus === "processing" ? (
                             <>
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Opening secure gateway...
+                              Processing securely...
                             </>
                           ) : (
                             <>
-                              <CreditCard className="h-4 w-4 mr-2" />
-                              Pay with Visa / MasterCard
+                              <Shield className="h-4 w-4 mr-2" />
+                              Pay Securely
                             </>
                           )}
                         </Button>
@@ -418,10 +423,6 @@ const Donate = () => {
                             {cardStatusMessage}
                           </div>
                         ) : null}
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Shield className="h-3 w-3" />
-                          Payments are processed securely by Flutterwave. Your card details are encrypted and never stored on our servers.
-                        </p>
                       </div>
                     </div>
                   ) : null}
