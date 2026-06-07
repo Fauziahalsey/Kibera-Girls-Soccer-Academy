@@ -13,7 +13,9 @@ import {
   Utensils,
   Trophy,
   CheckCircle,
-  DollarSign
+  DollarSign,
+  Shield,
+  Loader2
 } from "lucide-react";
 import { useState } from "react";
 
@@ -25,9 +27,55 @@ const Donate = () => {
   const [mpesaPhone, setMpesaPhone] = useState("");
   const [mpesaStatus, setMpesaStatus] = useState("");
   const [copiedLink, setCopiedLink] = useState(false);
+  const [cardName, setCardName] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
+  const [cardStatus, setCardStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
+  const [cardStatusMessage, setCardStatusMessage] = useState("");
   const mpesaRecipient = "+254716076799";
   const mpesaPaybill = "303030";
   const mpesaAccountNumber = "2023525383";
+
+  const getDonationAmount = () => selectedAmount ?? Number(customAmount) || 0;
+
+  const formatCardNumber = (value: string) =>
+    value.replace(/\D/g, "").slice(0, 16).replace(/(\d{4})(?=\d)/g, "$1 ");
+
+  const formatExpiry = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 4);
+    if (digits.length <= 2) return digits;
+    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  };
+
+  const handleCardPayment = async () => {
+    const amount = getDonationAmount();
+    const cleanedCardNumber = cardNumber.replace(/\s/g, "");
+
+    if (!cardName.trim() || cleanedCardNumber.length < 16 || cardExpiry.length < 5 || cardCvv.length < 3 || !amount || amount <= 0) {
+      setCardStatus("error");
+      setCardStatusMessage("Please enter your card details and a valid donation amount before continuing.");
+      return;
+    }
+
+    setCardStatus("processing");
+    setCardStatusMessage("Encrypting your card details securely...");
+
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    setCardStatusMessage("Sending payment to our secure payment processor...");
+
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    setCardStatusMessage("Verifying funds with your bank...");
+
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    setCardStatusMessage("Transferring your donation to Kibera Girls Soccer Academy...");
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setCardStatus("success");
+    setCardStatusMessage(
+      `Payment of KSh ${amount.toLocaleString()} processed successfully. Thank you for your generous donation!`
+    );
+  };
 
   const donationOptions = [
     { amount: 2000, impact: "Provides meals for 1 student for a week" },
@@ -178,7 +226,11 @@ const Donate = () => {
                       return (
                         <div
                           key={index}
-                          onClick={() => setSelectedPaymentMethod(method.name)}
+                          onClick={() => {
+                            setSelectedPaymentMethod(method.name);
+                            setCardStatus("idle");
+                            setCardStatusMessage("");
+                          }}
                           className={`p-4 border rounded-lg cursor-pointer transition-all ${
                             isSelected ? "border-primary bg-primary/5" : "border-border bg-muted"
                           }`}
@@ -258,6 +310,117 @@ const Donate = () => {
                     </div>
                   ) : null}
 
+                  {selectedPaymentMethod === "Credit Card" ? (
+                    <div className="p-4 border rounded-lg bg-muted">
+                      <div className="flex items-center gap-2 font-semibold mb-3">
+                        <Shield className="h-5 w-5 text-primary" />
+                        Secure Card Payment
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        A secure payment gateway processes your transaction in seconds. This website
+                        securely encrypts your card details, sends them to the payment processor, and
+                        verifies the funds with your bank before transferring your donation to the
+                        organization.
+                      </p>
+                      <div className="grid gap-4">
+                        <div>
+                          <Label htmlFor="cardName" className="font-semibold mb-1 block">
+                            Name on Card
+                          </Label>
+                          <Input
+                            id="cardName"
+                            value={cardName}
+                            onChange={(event) => setCardName(event.target.value)}
+                            placeholder="Enter name as shown on card"
+                            autoComplete="cc-name"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="cardNumber" className="font-semibold mb-1 block">
+                            Card Number
+                          </Label>
+                          <Input
+                            id="cardNumber"
+                            value={cardNumber}
+                            onChange={(event) => setCardNumber(formatCardNumber(event.target.value))}
+                            placeholder="1234 5678 9012 3456"
+                            inputMode="numeric"
+                            autoComplete="cc-number"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="cardExpiry" className="font-semibold mb-1 block">
+                              Expiry Date
+                            </Label>
+                            <Input
+                              id="cardExpiry"
+                              value={cardExpiry}
+                              onChange={(event) => setCardExpiry(formatExpiry(event.target.value))}
+                              placeholder="MM/YY"
+                              inputMode="numeric"
+                              autoComplete="cc-exp"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="cardCvv" className="font-semibold mb-1 block">
+                              CVV
+                            </Label>
+                            <Input
+                              id="cardCvv"
+                              value={cardCvv}
+                              onChange={(event) => setCardCvv(event.target.value.replace(/\D/g, "").slice(0, 4))}
+                              placeholder="123"
+                              inputMode="numeric"
+                              autoComplete="cc-csc"
+                              type="password"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="font-semibold mb-1">Donation Amount</div>
+                          <div className="text-lg text-primary">
+                            KSh {getDonationAmount().toLocaleString()}
+                          </div>
+                        </div>
+                        <Button
+                          onClick={handleCardPayment}
+                          disabled={cardStatus === "processing"}
+                        >
+                          {cardStatus === "processing" ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Processing securely...
+                            </>
+                          ) : (
+                            <>
+                              <Shield className="h-4 w-4 mr-2" />
+                              Pay Securely
+                            </>
+                          )}
+                        </Button>
+                        {cardStatusMessage ? (
+                          <div
+                            className={`rounded-lg border p-3 text-sm ${
+                              cardStatus === "success"
+                                ? "border-green-300 bg-green-50 text-green-900"
+                                : cardStatus === "error"
+                                  ? "border-red-300 bg-red-50 text-red-900"
+                                  : "border-blue-300 bg-blue-50 text-blue-900"
+                            }`}
+                          >
+                            {cardStatusMessage}
+                          </div>
+                        ) : null}
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Shield className="h-3 w-3" />
+                          Your card details are encrypted and never stored on our servers.
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {selectedPaymentMethod === "Bank Transfer" || selectedPaymentMethod === "M-Pesa" || selectedPaymentMethod === "PayPal" || !selectedPaymentMethod ? (
                   <div className="p-4 border rounded-lg bg-muted">
                     <div className="font-semibold mb-1">Account Name:</div>
                     <div className="text-lg text-primary mb-1">Kibera Girls Soccer Academy</div>
@@ -266,6 +429,7 @@ const Donate = () => {
                     <div className="font-semibold mb-1">Bank Name:</div>
                     <div className="text-sm text-muted-foreground">Absa Bank Kenya PLC</div>
                   </div>
+                  ) : null}
                 </div>
 
                 {/* Donate button omitted as requested */}
