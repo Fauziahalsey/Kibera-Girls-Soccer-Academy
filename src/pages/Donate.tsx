@@ -12,13 +12,22 @@ import {
   BookOpen,
   Utensils,
   Trophy,
-  CheckCircle
+  CheckCircle,
+  DollarSign
 } from "lucide-react";
 import { useState } from "react";
 
 const Donate = () => {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
+  const [mpesaName, setMpesaName] = useState("");
+  const [mpesaPhone, setMpesaPhone] = useState("");
+  const [mpesaStatus, setMpesaStatus] = useState("");
+  const [copiedLink, setCopiedLink] = useState(false);
+  const mpesaRecipient = "+254716076799";
+  const mpesaPaybill = "303030";
+  const mpesaAccountNumber = "2023525383";
 
   const donationOptions = [
     { amount: 2000, impact: "Provides meals for 1 student for a week" },
@@ -33,6 +42,7 @@ const Donate = () => {
     { name: "M-Pesa", icon: Smartphone, description: "Pay via mobile money" },
     { name: "Bank Transfer", icon: Building, description: "Direct bank transfer" },
     { name: "Credit Card", icon: CreditCard, description: "Visa, MasterCard accepted" },
+    { name: "PayPal", icon: DollarSign, description: "Donate securely with PayPal" },
   ];
 
   const impactAreas = [
@@ -81,6 +91,25 @@ const Donate = () => {
             Your generous contribution helps us provide quality education and opportunities 
             for our students. Every donation, no matter the size, makes a real difference.
           </p>
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 text-sm text-muted-foreground">
+            <span>Donate page link:</span>
+            <a className="text-primary underline" href="https://www.kiberagirlssocceracademy.co.ke/donate" target="_blank" rel="noreferrer">https://www.kiberagirlssocceracademy.co.ke/donate</a>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const donateUrl = "https://www.kiberagirlssocceracademy.co.ke/donate";
+                navigator.clipboard.writeText(donateUrl);
+                setCopiedLink(true);
+                setTimeout(() => setCopiedLink(false), 2000);
+              }}
+            >
+              Copy link
+            </Button>
+            {copiedLink ? (
+              <span className="text-success">Link copied!</span>
+            ) : null}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -122,10 +151,113 @@ const Donate = () => {
                   ))}
                 </div>
 
+                <div className="space-y-4 pt-4">
+                  <Label htmlFor="customAmount" className="font-semibold">
+                    Custom amount
+                  </Label>
+                  <Input
+                    id="customAmount"
+                    type="number"
+                    min={100}
+                    value={customAmount}
+                    onChange={(event) => {
+                      setCustomAmount(event.target.value);
+                      setSelectedAmount(null);
+                    }}
+                    placeholder="Enter amount in KSh"
+                  />
+                </div>
 
                 {/* Payment Methods */}
                 <div className="space-y-4 pt-4 border-t">
                   <h3 className="text-lg font-semibold">Payment Method</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {paymentMethods.map((method, index) => {
+                      const Icon = method.icon;
+                      const isSelected = selectedPaymentMethod === method.name;
+                      return (
+                        <div
+                          key={index}
+                          onClick={() => setSelectedPaymentMethod(method.name)}
+                          className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                            isSelected ? "border-primary bg-primary/5" : "border-border bg-muted"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 mb-2">
+                            <Icon className="h-5 w-5 text-primary" />
+                            <div className="font-semibold">{method.name}</div>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{method.description}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {selectedPaymentMethod === "M-Pesa" ? (
+                    <div className="p-4 border rounded-lg bg-muted">
+                      <div className="font-semibold mb-3">M-Pesa STK Push</div>
+                      <div className="text-sm text-muted-foreground mb-4">
+                        Use paybill <span className="font-semibold text-foreground">{mpesaPaybill}</span> and account number <span className="font-semibold text-foreground">{mpesaAccountNumber}</span>.
+                      </div>
+                      <div className="grid gap-4">
+                        <div>
+                          <Label htmlFor="mpesaName" className="font-semibold mb-1 block">
+                            Full Name
+                          </Label>
+                          <Input
+                            id="mpesaName"
+                            value={mpesaName}
+                            onChange={(event) => setMpesaName(event.target.value)}
+                            placeholder="Enter your full name"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="mpesaPhone" className="font-semibold mb-1 block">
+                            Your M-Pesa Number
+                          </Label>
+                          <Input
+                            id="mpesaPhone"
+                            value={mpesaPhone}
+                            onChange={(event) => setMpesaPhone(event.target.value)}
+                            placeholder="e.g. 0708013099"
+                          />
+                        </div>
+                        <div>
+                          <div className="font-semibold mb-1">Donation Amount</div>
+                          <div className="text-lg text-primary">
+                            KSh {selectedAmount ? selectedAmount.toLocaleString() : customAmount ? Number(customAmount).toLocaleString() : "0"}
+                          </div>
+                        </div>
+                        <Button
+                          onClick={() => {
+                            const amount = selectedAmount ?? Number(customAmount);
+                            if (!mpesaName.trim() || !mpesaPhone.trim() || !amount || amount <= 0) {
+                              window.alert("Please enter your name, M-Pesa number and a valid donation amount before requesting the STK push.");
+                              return;
+                            }
+                            setMpesaStatus(`Simulated STK Push request for ${mpesaPhone}. This demo does not send a real M-Pesa prompt.`);
+                          }}
+                        >
+                          Request STK Push
+                        </Button>
+                        {mpesaStatus ? (
+                          <div className="rounded-lg border border-orange-300 bg-orange-50 p-3 text-sm text-orange-900">
+                            {mpesaStatus}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {selectedPaymentMethod === "PayPal" ? (
+                    <div className="p-4 border rounded-lg bg-muted">
+                      <div className="font-semibold mb-3">Donate securely with PayPal</div>
+                      <div className="text-sm text-muted-foreground">
+                        Send your gift using PayPal at <a className="text-primary underline" href="https://paypal.me/kibera-girls-soccer-academy" target="_blank" rel="noreferrer">paypal.me/kibera-girls-soccer-academy</a>
+                      </div>
+                    </div>
+                  ) : null}
+
                   <div className="p-4 border rounded-lg bg-muted">
                     <div className="font-semibold mb-1">Account Name:</div>
                     <div className="text-lg text-primary mb-1">Kibera Girls Soccer Academy</div>
