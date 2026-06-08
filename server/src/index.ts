@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { healthRoutes } from "./routes/health.js";
 import { donationRoutes } from "./routes/donations.js";
 import { contactRoutes } from "./routes/contact.js";
+import pesapalRoutes from "./routes/pesapal.js";
 
 dotenv.config();
 
@@ -18,7 +19,9 @@ const allowedOrigins = [
   "http://localhost:4173",
   "http://127.0.0.1:4173",
   "http://localhost:3000",
-  "http://127.0.0.1:3000"
+  "http://127.0.0.1:3000",
+  "https://www.kiberagirlssocceracademy.co.ke",
+  "https://kiberagirlssocceracademy.co.ke"
 ];
 
 // Middleware
@@ -42,6 +45,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Routes
 app.use("/api/health", healthRoutes);
 app.use("/api/donations", donationRoutes);
+app.use("/api/donations/pesapal", pesapalRoutes);
 app.use("/api/contact", contactRoutes);
 
 // Error handling middleware
