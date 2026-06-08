@@ -46,10 +46,11 @@ const Donate = () => {
 
   const publicKey = ((import.meta as unknown) as { env: Record<string, string> }).env.VITE_FLUTTERWAVE_PUBLIC_KEY;
   const logoUrl = typeof window !== "undefined" ? `${window.location.origin}/assets/logo-CHH-E7aD.png` : "";
+  const [txRef] = useState(() => `KGS-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`);
 
   const cardConfig = {
     public_key: publicKey || "",
-    tx_ref: `KGS-${Date.now()}`,
+    tx_ref: txRef,
     amount: getDonationAmount() || 1,
     currency: "KES" as const,
     payment_options: "card" as const,
@@ -67,7 +68,7 @@ const Donate = () => {
 
   const generalConfig = {
     public_key: publicKey || "",
-    tx_ref: `KGS-${Date.now()}`,
+    tx_ref: txRef,
     amount: getDonationAmount() || 1,
     currency: "KES" as const,
     payment_options: "card,mpesa,mobilemoney,ussd,banktransfer" as const,
