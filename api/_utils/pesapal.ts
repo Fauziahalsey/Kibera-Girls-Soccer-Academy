@@ -139,7 +139,7 @@ export async function initializePesapalPayment(body: {
 
     if (msg.toLowerCase().includes("exceeds limit")) {
       msg =
-        "This amount exceeds the card payment limit of KSh 2,000. Please choose a lower amount or use M-Pesa or bank transfer.";
+        "This amount exceeds the card payment limit for your currency. Please choose a lower amount or use bank transfer.";
     }
 
     console.error("Pesapal SubmitOrderRequest failed:", data);
