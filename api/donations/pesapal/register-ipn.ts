@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { BACKEND_URL, registerPesapalIpn } from "../../_utils/pesapal";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
@@ -7,6 +6,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    const { BACKEND_URL, registerPesapalIpn } = await import("../../_utils/pesapal.js");
     const ipnUrl =
       req.body?.url ||
       process.env.PESAPAL_IPN_URL ||

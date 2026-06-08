@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { handlePesapalIpn } from "../../_utils/pesapal";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") {
@@ -7,6 +6,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    const { handlePesapalIpn } = await import("../../_utils/pesapal.js");
     const result = await handlePesapalIpn(req.query);
     return res.status(200).json(result);
   } catch (error) {

@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { initializePesapalPayment } from "../../_utils/pesapal";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
@@ -17,6 +16,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    const { initializePesapalPayment } = await import("../../_utils/pesapal.js");
     const result = await initializePesapalPayment({
       amount: Number(amount),
       currency,

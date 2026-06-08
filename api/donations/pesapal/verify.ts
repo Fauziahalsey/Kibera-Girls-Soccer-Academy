@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { verifyPesapalPayment } from "../../_utils/pesapal";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") {
@@ -16,6 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    const { verifyPesapalPayment } = await import("../../_utils/pesapal.js");
     const result = await verifyPesapalPayment(orderTrackingId);
     return res.status(200).json(result);
   } catch (error) {
