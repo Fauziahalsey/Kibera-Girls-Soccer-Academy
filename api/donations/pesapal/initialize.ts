@@ -26,10 +26,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       billing_address,
     });
 
+    if (!result.redirect_url) {
+      return res.status(502).json({
+        success: false,
+        message: "Pesapal did not return a payment link. Please try again.",
+      });
+    }
+
     return res.status(200).json({
       success: true,
       message: "Pesapal payment initialized.",
-      ...result,
+      redirect_url: result.redirect_url,
+      order_tracking_id: result.order_tracking_id,
+      merchant_reference: result.merchant_reference,
     });
   } catch (error) {
     console.error("Initialize error:", error);

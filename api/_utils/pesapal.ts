@@ -1,26 +1,15 @@
-const PESAPAL_CONSUMER_KEY =
-  process.env.PESAPAL_CONSUMER_KEY ?? "X4e369i6izufetR8Y6R2drAfeFZ74pvh";
-const PESAPAL_CONSUMER_SECRET =
-  process.env.PESAPAL_CONSUMER_SECRET ?? "6PhHqPDc0fobS93yyKjom5y+CJE=";
-const PESAPAL_IPN_ID =
-  process.env.PESAPAL_IPN_ID ?? "b950f3ed-8445-421e-a00f-da49e9823757";
-
-const pesapalEnv = process.env.PESAPAL_ENV ?? "production";
-
-export const PESAPAL_BASE_URL =
-  pesapalEnv === "production"
-    ? "https://pay.pesapal.com/v3"
-    : "https://cybqa.pesapal.com/pesapalv3";
-
-export const FRONTEND_URL =
-  process.env.FRONTEND_URL ?? "https://www.kiberagirlssocceracademy.co.ke";
-
-export const BACKEND_URL =
-  process.env.BACKEND_URL ?? "https://www.kiberagirlssocceracademy.co.ke";
+// Production Pesapal configuration for Kibera Girls Soccer Academy
+const PESAPAL_CONSUMER_KEY = "X4e369i6izufetR8Y6R2drAfeFZ74pvh";
+const PESAPAL_CONSUMER_SECRET = "6PhHqPDc0fobS93yyKjom5y+CJE=";
+const PESAPAL_IPN_ID = "b950f3ed-8445-421e-a00f-da49e9823757";
+const PESAPAL_BASE_URL = "https://pay.pesapal.com/v3";
+const FRONTEND_URL = "https://www.kiberagirlssocceracademy.co.ke";
+const BACKEND_URL = "https://www.kiberagirlssocceracademy.co.ke";
 
 interface PesapalTokenResponse {
   token?: string;
   message?: string;
+  error?: { message?: string };
 }
 
 interface PesapalOrderResponse {
@@ -28,6 +17,7 @@ interface PesapalOrderResponse {
   merchant_reference?: string;
   redirect_url?: string;
   message?: string;
+  error?: { message?: string };
 }
 
 export interface PesapalStatusResponse {
@@ -49,19 +39,11 @@ export interface BillingAddress {
   first_name?: string;
   middle_name?: string;
   last_name?: string;
-  line_1?: string;
-  line_2?: string;
-  city?: string;
-  state?: string;
-  postal_code?: string;
-  zip_code?: string;
 }
 
-export async function getPesapalToken(): Promise<string> {
-  if (!PESAPAL_CONSUMER_KEY || !PESAPAL_CONSUMER_SECRET) {
-    throw new Error("Pesapal payment credentials are missing.");
-  }
+export { FRONTEND_URL, BACKEND_URL };
 
+async function getPesapalToken(): Promise<string> {
   const res = await fetch(`${PESAPAL_BASE_URL}/api/Auth/RequestToken`, {
     method: "POST",
     headers: {
@@ -77,69 +59,36 @@ export async function getPesapalToken(): Promise<string> {
   const data = (await res.json()) as PesapalTokenResponse;
 
   if (!res.ok || !data.token) {
-    throw new Error(data.message || "Failed to get Pesapal token.");
+    const msg = data.error?.message || data.message || "Failed to get Pesapal token.";
+    throw new Error(msg);
   }
 
   return data.token;
 }
 
-export function createMerchantReference(): string {
+function createMerchantReference(): string {
   const suffix = Math.random().toString(36).slice(2, 8).toUpperCase();
   return `KGSA-${Date.now()}-${suffix}`;
 }
 
-interface PesapalIpnResponse {
-  ipn_id?: string;
-  url?: string;
-  message?: string;
-}
+function buildBillingAddress(billing?: BillingAddress) {
+  const email = billing?.email_address?.trim() || "";
+  const phone = billing?.phone_number?.trim() || "";
+  const firstName = billing?.first_name?.trim() || "Donor";
+  const lastName = billing?.last_name?.trim() || "Guest";
 
-function getDefaultIpnUrl(): string {
-  return (
-    process.env.PESAPAL_IPN_URL ||
-    `${BACKEND_URL}/api/donations/pesapal/ipn`
-  );
-}
-
-export async function registerPesapalIpn(ipnUrl: string) {
-  const token = await getPesapalToken();
-
-  const response = await fetch(`${PESAPAL_BASE_URL}/api/URLSetup/RegisterIPN`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      url: ipnUrl,
-      ipn_notification_type: "GET",
-    }),
-  });
-
-  const data = (await response.json()) as PesapalIpnResponse;
-
-  if (!response.ok || !data.ipn_id) {
-    console.error("Pesapal register IPN error:", data);
-    throw new Error(data.message || "Failed to register IPN URL with Pesapal.");
+  if (!email && !phone) {
+    throw new Error("Email or phone number is required for card payment.");
   }
 
-  return data;
-}
-
-async function getNotificationId(): Promise<string> {
-  if (PESAPAL_IPN_ID) {
-    return PESAPAL_IPN_ID;
-  }
-
-  const ipnUrl = getDefaultIpnUrl();
-  const data = await registerPesapalIpn(ipnUrl);
-
-  console.log(
-    `Pesapal IPN registered. Add this to Vercel as PESAPAL_IPN_ID: ${data.ipn_id}`
-  );
-
-  return data.ipn_id!;
+  return {
+    email_address: email || undefined,
+    phone_number: phone || "0700000000",
+    country_code: "KE",
+    first_name: firstName,
+    middle_name: "",
+    last_name: lastName,
+  };
 }
 
 export async function initializePesapalPayment(body: {
@@ -150,40 +99,24 @@ export async function initializePesapalPayment(body: {
   cancellation_url?: string;
   billing_address?: BillingAddress;
 }) {
-  const notificationId = await getNotificationId();
-
-  const email = body.billing_address?.email_address?.trim();
-  const phone = body.billing_address?.phone_number?.trim();
-
-  if (!email && !phone) {
-    throw new Error("Email or phone number is required for card payment.");
+  const amount = Number(body.amount);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error("A valid donation amount is required.");
   }
 
   const token = await getPesapalToken();
   const merchantReference = createMerchantReference();
+  const billing = buildBillingAddress(body.billing_address);
 
   const orderPayload = {
     id: merchantReference,
     currency: body.currency || "KES",
-    amount: Number(body.amount),
+    amount,
     description: String(body.description || "Donation to Kibera Girls Soccer Academy").slice(0, 100),
     callback_url: body.callback_url || `${FRONTEND_URL}/donate/callback`,
     cancellation_url: body.cancellation_url || `${FRONTEND_URL}/donate`,
-    notification_id: notificationId,
-    billing_address: {
-      email_address: email,
-      phone_number: phone,
-      country_code: body.billing_address?.country_code || "KE",
-      first_name: body.billing_address?.first_name || "Donor",
-      middle_name: body.billing_address?.middle_name || "",
-      last_name: body.billing_address?.last_name || "",
-      line_1: body.billing_address?.line_1 || "",
-      line_2: body.billing_address?.line_2 || "",
-      city: body.billing_address?.city || "",
-      state: body.billing_address?.state || "",
-      postal_code: body.billing_address?.postal_code || "",
-      zip_code: body.billing_address?.zip_code || "",
-    },
+    notification_id: PESAPAL_IPN_ID,
+    billing_address: billing,
   };
 
   const response = await fetch(`${PESAPAL_BASE_URL}/api/Transactions/SubmitOrderRequest`, {
@@ -199,13 +132,18 @@ export async function initializePesapalPayment(body: {
   const data = (await response.json()) as PesapalOrderResponse;
 
   if (!response.ok || !data.redirect_url) {
-    throw new Error(data.message || "Failed to initialize Pesapal payment.");
+    const msg =
+      data.error?.message ||
+      data.message ||
+      `Pesapal rejected the payment request (status ${response.status}).`;
+    console.error("Pesapal SubmitOrderRequest failed:", data);
+    throw new Error(msg);
   }
 
   return {
     redirect_url: data.redirect_url,
     order_tracking_id: data.order_tracking_id,
-    merchant_reference: data.merchant_reference,
+    merchant_reference: data.merchant_reference || merchantReference,
   };
 }
 
@@ -247,6 +185,31 @@ export async function verifyPesapalPayment(orderTrackingId: string) {
       description: data.description,
     },
   };
+}
+
+export async function registerPesapalIpn(ipnUrl: string) {
+  const token = await getPesapalToken();
+
+  const response = await fetch(`${PESAPAL_BASE_URL}/api/URLSetup/RegisterIPN`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      url: ipnUrl,
+      ipn_notification_type: "GET",
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || !data.ipn_id) {
+    throw new Error(data.message || "Failed to register IPN URL with Pesapal.");
+  }
+
+  return data;
 }
 
 export async function handlePesapalIpn(query: Record<string, string | string[] | undefined>) {

@@ -78,9 +78,10 @@ const Donate = () => {
           cancellation_url: `${window.location.origin}/donate`,
           billing_address: {
             email_address: donorEmail.trim(),
-            phone_number: donorPhone.trim() || undefined,
-            first_name: donorName.split(" ")[0] || "Donor",
-            last_name: donorName.split(" ").slice(1).join(" ") || undefined,
+            phone_number: donorPhone.trim() || "",
+            country_code: "KE",
+            first_name: donorName.trim().split(" ")[0] || "Donor",
+            last_name: donorName.trim().split(" ").slice(1).join(" ") || "Guest",
           },
         }),
       });
@@ -91,9 +92,11 @@ const Donate = () => {
         throw new Error(data.message || "Failed to initialize Pesapal payment.");
       }
 
-      // Redirect user to Pesapal hosted payment page
-      // Pesapal handles card entry, 3DS, OTP — all securely
-      window.location.href = data.redirect_url;
+      if (!data.redirect_url) {
+        throw new Error("Payment link was not received. Please try again.");
+      }
+
+      window.location.assign(data.redirect_url);
 
     } catch (error) {
       setPesapalStatus("error");
