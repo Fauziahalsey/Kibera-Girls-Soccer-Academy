@@ -40,9 +40,56 @@ interface PesapalStatusResponse {
   error?: unknown;
 }
 
+interface PesapalIpnResponse {
+  ipn_id?: string;
+  message?: string;
+}
+
+function getDefaultIpnUrl(): string {
+  return (
+    process.env.PESAPAL_IPN_URL ||
+    `${BACKEND_URL}/api/donations/pesapal/ipn`
+  );
+}
+
+async function registerIpnUrl(ipnUrl: string): Promise<string> {
+  const token = await getPesapalToken();
+
+  const response = await fetch(`${PESAPAL_BASE_URL}/api/URLSetup/RegisterIPN`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      url: ipnUrl,
+      ipn_notification_type: "GET",
+    }),
+  });
+
+  const data = (await response.json()) as PesapalIpnResponse;
+
+  if (!response.ok || !data.ipn_id) {
+    throw new Error(data.message || "Failed to register IPN URL with Pesapal.");
+  }
+
+  return data.ipn_id;
+}
+
+async function getNotificationId(): Promise<string> {
+  if (PESAPAL_IPN_ID) {
+    return PESAPAL_IPN_ID;
+  }
+
+  return registerIpnUrl(getDefaultIpnUrl());
+}
+
 async function getPesapalToken(): Promise<string> {
   if (!PESAPAL_CONSUMER_KEY || !PESAPAL_CONSUMER_SECRET) {
-    throw new Error("Pesapal credentials are not configured on the server.");
+    throw new Error(
+      "Pesapal is not set up yet. Add PESAPAL_CONSUMER_KEY and PESAPAL_CONSUMER_SECRET in your environment variables."
+    );
   }
 
   const res = await fetch(`${PESAPAL_BASE_URL}/api/Auth/RequestToken`, {
@@ -138,13 +185,7 @@ router.post("/initialize", async (req: Request, res: Response) => {
       });
     }
 
-    if (!PESAPAL_IPN_ID) {
-      return res.status(500).json({
-        success: false,
-        message:
-          "Pesapal IPN is not configured. Register your IPN URL and set PESAPAL_IPN_ID on the server.",
-      });
-    }
+    const notificationId = await getNotificationId();
 
     const email = billing_address?.email_address?.trim();
     const phone = billing_address?.phone_number?.trim();
@@ -166,7 +207,7 @@ router.post("/initialize", async (req: Request, res: Response) => {
       description: String(description).slice(0, 100),
       callback_url: callback_url || `${FRONTEND_URL}/donate/callback`,
       cancellation_url: cancellation_url || `${FRONTEND_URL}/donate`,
-      notification_id: PESAPAL_IPN_ID,
+      notification_id: notificationId,
       billing_address: {
         email_address: email,
         phone_number: phone,

@@ -54,7 +54,9 @@ export interface BillingAddress {
 
 export async function getPesapalToken(): Promise<string> {
   if (!PESAPAL_CONSUMER_KEY || !PESAPAL_CONSUMER_SECRET) {
-    throw new Error("Pesapal credentials are not configured on the server.");
+    throw new Error(
+      "Pesapal is not set up yet. Add PESAPAL_CONSUMER_KEY and PESAPAL_CONSUMER_SECRET in Vercel environment variables."
+    );
   }
 
   const res = await fetch(`${PESAPAL_BASE_URL}/api/Auth/RequestToken`, {
@@ -83,6 +85,19 @@ export function createMerchantReference(): string {
   return `KGSA-${Date.now()}-${suffix}`;
 }
 
+interface PesapalIpnResponse {
+  ipn_id?: string;
+  url?: string;
+  message?: string;
+}
+
+function getDefaultIpnUrl(): string {
+  return (
+    process.env.PESAPAL_IPN_URL ||
+    `${BACKEND_URL}/api/donations/pesapal/ipn`
+  );
+}
+
 export async function registerPesapalIpn(ipnUrl: string) {
   const token = await getPesapalToken();
 
@@ -99,13 +114,29 @@ export async function registerPesapalIpn(ipnUrl: string) {
     }),
   });
 
-  const data = await response.json();
+  const data = (await response.json()) as PesapalIpnResponse;
 
-  if (!response.ok) {
-    throw new Error("Failed to register IPN URL with Pesapal.");
+  if (!response.ok || !data.ipn_id) {
+    console.error("Pesapal register IPN error:", data);
+    throw new Error(data.message || "Failed to register IPN URL with Pesapal.");
   }
 
   return data;
+}
+
+async function getNotificationId(): Promise<string> {
+  if (PESAPAL_IPN_ID) {
+    return PESAPAL_IPN_ID;
+  }
+
+  const ipnUrl = getDefaultIpnUrl();
+  const data = await registerPesapalIpn(ipnUrl);
+
+  console.log(
+    `Pesapal IPN registered. Add this to Vercel as PESAPAL_IPN_ID: ${data.ipn_id}`
+  );
+
+  return data.ipn_id!;
 }
 
 export async function initializePesapalPayment(body: {
@@ -116,11 +147,7 @@ export async function initializePesapalPayment(body: {
   cancellation_url?: string;
   billing_address?: BillingAddress;
 }) {
-  if (!PESAPAL_IPN_ID) {
-    throw new Error(
-      "Pesapal IPN is not configured. Register your IPN URL and set PESAPAL_IPN_ID on the server."
-    );
-  }
+  const notificationId = await getNotificationId();
 
   const email = body.billing_address?.email_address?.trim();
   const phone = body.billing_address?.phone_number?.trim();
@@ -139,7 +166,7 @@ export async function initializePesapalPayment(body: {
     description: String(body.description || "Donation to Kibera Girls Soccer Academy").slice(0, 100),
     callback_url: body.callback_url || `${FRONTEND_URL}/donate/callback`,
     cancellation_url: body.cancellation_url || `${FRONTEND_URL}/donate`,
-    notification_id: PESAPAL_IPN_ID,
+    notification_id: notificationId,
     billing_address: {
       email_address: email,
       phone_number: phone,
