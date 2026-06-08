@@ -23,19 +23,21 @@ const Donate = () => {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
-  const [mpesaName, setMpesaName] = useState("");
-  const [mpesaPhone, setMpesaPhone] = useState("");
-  const [mpesaStatus, setMpesaStatus] = useState("");
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [cardName, setCardName] = useState("");
+  const [donorName, setDonorName] = useState("");
+  const [donorEmail, setDonorEmail] = useState("");
+  const [donorPhone, setDonorPhone] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvv, setCardCvv] = useState("");
-  const [cardStatus, setCardStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
-  const [cardStatusMessage, setCardStatusMessage] = useState("");
+  const [donorStatus, setDonorStatus] = useState("");
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [paystackStatus, setPaystackStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
+  const [paystackMessage, setPaystackMessage] = useState("");
   const mpesaRecipient = "+254716076799";
   const mpesaPaybill = "303030";
   const mpesaAccountNumber = "2023525383";
+  const paystackPublicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY as string;
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "";
 
   const getDonationAmount = () => {
     if (selectedAmount !== null) return selectedAmount;
@@ -43,55 +45,114 @@ const Donate = () => {
     return Number.isFinite(custom) && custom > 0 ? custom : 0;
   };
 
-  const formatCardNumber = (value: string) =>
-    value.replace(/\D/g, "").slice(0, 16).replace(/(\d{4})(?=\d)/g, "$1 ");
+  const loadPaystackScript = async () => {
+    if (typeof window === "undefined") return;
+    if ((window as any).PaystackPop) return;
 
-  const formatExpiry = (value: string) => {
-    const digits = value.replace(/\D/g, "").slice(0, 4);
-    if (digits.length <= 2) return digits;
-    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    return new Promise<void>((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://js.paystack.co/v1/inline.js";
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("Unable to load Paystack script"));
+      document.body.appendChild(script);
+    });
   };
 
-  const handleCardPayment = async () => {
+  const handlePaystackPayment = async () => {
     const amount = getDonationAmount();
-    const cleanedCardNumber = cardNumber.replace(/\s/g, "");
 
-    if (
-      !cardName.trim() ||
-      cleanedCardNumber.length < 16 ||
-      cardExpiry.length < 5 ||
-      cardCvv.length < 3 ||
-      !amount ||
-      amount <= 0
-    ) {
-      setCardStatus("error");
-      setCardStatusMessage("Please enter your card details and a valid donation amount before continuing.");
+    if (!paystackPublicKey) {
+      setPaystackStatus("error");
+      setPaystackMessage("Paystack public key is not configured.");
       return;
     }
 
-    setCardStatus("processing");
-    setCardStatusMessage("Encrypting your card details securely...");
+    if (!amount || amount <= 0) {
+      setPaystackStatus("error");
+      setPaystackMessage("Enter a valid donation amount.");
+      return;
+    }
 
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    setCardStatusMessage("Sending payment to our secure payment processor...");
+    try {
+      setPaystackStatus("processing");
+      setPaystackMessage("Initializing credit card donation...");
 
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    setCardStatusMessage("Verifying funds with your bank...");
+      const donationEmail = donorEmail.trim() || `donation+${Date.now()}@noreply.kiberagirlssocceracademy.co.ke`;
 
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    setCardStatusMessage("Transferring your donation to Kibera Girls Soccer Academy...");
+      const initializeRes = await fetch(`${apiBaseUrl || ""}/api/donations/paystack/initialize`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount,
+          email: donationEmail,
+          donorName: donorName || undefined,
+          message: "Donation to Kibera Girls Soccer Academy via Credit Card"
+        })
+      });
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setCardStatus("success");
-    setCardStatusMessage(
-      `Payment of KSh ${amount.toLocaleString()} processed successfully. Thank you for your generous donation!`
-    );
+      const initializeData = await initializeRes.json();
+      if (!initializeRes.ok || !initializeData.success) {
+        throw new Error(initializeData.message || "Unable to initialize Paystack payment.");
+      }
+
+      await loadPaystackScript();
+      const paystack = (window as any).PaystackPop;
+      if (!paystack) {
+        throw new Error("Paystack script failed to load.");
+      }
+
+      const handler = paystack.setup({
+        key: paystackPublicKey,
+        email: donationEmail,
+        amount: Math.round(amount * 100),
+        currency: "KES",
+        ref: initializeData.data.reference,
+        metadata: {
+          custom_fields: [
+            {
+              display_name: "Donor Name",
+              variable_name: "donor_name",
+              value: donorName
+            }
+          ]
+        },
+        callback: async (response: any) => {
+          setPaystackMessage("Verifying payment...");
+          const verifyRes = await fetch(`${apiBaseUrl}/api/donations/paystack/verify?reference=${encodeURIComponent(response.reference)}`);
+          const verifyData = await verifyRes.json();
+
+          if (!verifyRes.ok || !verifyData.success) {
+            setPaystackStatus("error");
+            setPaystackMessage(verifyData.message || "Payment verification failed.");
+            return;
+          }
+
+          setPaystackStatus("success");
+          setPaystackMessage(`Payment successful! Reference: ${response.reference}`);
+        },
+        onClose: () => {
+          if (paystackStatus !== "success") {
+            setPaystackStatus("error");
+            setPaystackMessage("Payment window closed before completion.");
+          }
+        }
+      });
+
+      handler.openIframe();
+    } catch (error) {
+      setPaystackStatus("error");
+      if (error instanceof TypeError) {
+        setPaystackMessage(`Failed to connect to the donation API. Make sure the backend server is running and VITE_API_BASE_URL is correct.`);
+      } else {
+        setPaystackMessage(error instanceof Error ? error.message : "Paystack payment failed.");
+      }
+    }
   };
 
   const donationOptions = [
     { amount: 2000, impact: "Provides meals for 1 student for a week" },
     { amount: 5000, impact: "Buys textbooks for 5 students" },
-    // { amount: 10000, impact: "Sponsors 1 student's monthly school fees" },
     { amount: 25000, impact: "Funds a student's full term education" },
     { amount: 50000, impact: "Provides computer equipment for the lab" },
     { amount: 100000, impact: "Sponsors laboratory equipment upgrade" },
@@ -239,8 +300,10 @@ const Donate = () => {
                           key={index}
                           onClick={() => {
                             setSelectedPaymentMethod(method.name);
-                            setCardStatus("idle");
-                            setCardStatusMessage("");
+                            if (method.name === "Credit Card") {
+                              setPaystackStatus("idle");
+                              setPaystackMessage("");
+                            }
                           }}
                           className={`p-4 border rounded-lg cursor-pointer transition-all ${
                             isSelected ? "border-primary bg-primary/5" : "border-border bg-muted"
@@ -264,24 +327,24 @@ const Donate = () => {
                       </div>
                       <div className="grid gap-4">
                         <div>
-                          <Label htmlFor="mpesaName" className="font-semibold mb-1 block">
+                          <Label htmlFor="donorName" className="font-semibold mb-1 block">
                             Full Name
                           </Label>
                           <Input
-                            id="mpesaName"
-                            value={mpesaName}
-                            onChange={(event) => setMpesaName(event.target.value)}
+                            id="donorName"
+                            value={donorName}
+                            onChange={(event) => setDonorName(event.target.value)}
                             placeholder="Enter your full name"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="mpesaPhone" className="font-semibold mb-1 block">
+                          <Label htmlFor="donorPhone" className="font-semibold mb-1 block">
                             Your M-Pesa Number
                           </Label>
                           <Input
-                            id="mpesaPhone"
-                            value={mpesaPhone}
-                            onChange={(event) => setMpesaPhone(event.target.value)}
+                            id="donorPhone"
+                            value={donorPhone}
+                            onChange={(event) => setDonorPhone(event.target.value)}
                             placeholder="e.g. 0708013099"
                           />
                         </div>
@@ -294,18 +357,116 @@ const Donate = () => {
                         <Button
                           onClick={() => {
                             const amount = selectedAmount ?? Number(customAmount);
-                            if (!mpesaName.trim() || !mpesaPhone.trim() || !amount || amount <= 0) {
+                            if (!donorName.trim() || !donorPhone.trim() || !amount || amount <= 0) {
                               window.alert("Please enter your name, M-Pesa number and a valid donation amount before requesting the STK push.");
                               return;
                             }
-                            setMpesaStatus(`Simulated STK Push request for ${mpesaPhone}. This demo does not send a real M-Pesa prompt.`);
+                            setDonorStatus(`Simulated STK Push request for ${donorPhone}. This demo does not send a real M-Pesa prompt.`);
                           }}
                         >
                           Request STK Push
                         </Button>
-                        {mpesaStatus ? (
+                        {donorStatus ? (
                           <div className="rounded-lg border border-orange-300 bg-orange-50 p-3 text-sm text-orange-900">
-                            {mpesaStatus}
+                            {donorStatus}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {selectedPaymentMethod === "Credit Card" ? (
+                    <div className="p-4 border rounded-lg bg-muted">
+                      <div className="flex items-center gap-2 font-semibold mb-3">
+                        <CreditCard className="h-5 w-5 text-primary" />
+                        Secure Card Payment — Visa, MasterCard accepted
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        A secure payment gateway processes your transaction in seconds. This website securely encrypts your card details, sends them to the payment processor, and verifies the funds with your bank before transferring your donation to the organization.
+                      </p>
+                      <div className="grid gap-4">
+                        <div>
+                          <Label htmlFor="cardName" className="font-semibold mb-1 block">
+                            Name on Card
+                          </Label>
+                          <Input
+                            id="cardName"
+                            value={donorName}
+                            onChange={(event) => setDonorName(event.target.value)}
+                            placeholder="Enter name as shown on card"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="cardNumber" className="font-semibold mb-1 block">
+                            Card Number
+                          </Label>
+                          <Input
+                            id="cardNumber"
+                            type="text"
+                            value={cardNumber}
+                            onChange={(event) => setCardNumber(event.target.value)}
+                            placeholder="1234 5678 9012 3456"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="expiryDate" className="font-semibold mb-1 block">
+                              Expiry Date
+                            </Label>
+                            <Input
+                              id="expiryDate"
+                              type="text"
+                              value={cardExpiry}
+                              onChange={(event) => setCardExpiry(event.target.value)}
+                              placeholder="MM/YY"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="cvv" className="font-semibold mb-1 block">
+                              CVV
+                            </Label>
+                            <Input
+                              id="cvv"
+                              type="password"
+                              value={cardCvv}
+                              onChange={(event) => setCardCvv(event.target.value)}
+                              placeholder="123"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="font-semibold mb-1">Donation Amount</div>
+                          <div className="text-lg text-primary">
+                            KSh {getDonationAmount().toLocaleString()}
+                          </div>
+                        </div>
+                        <Button
+                          onClick={handlePaystackPayment}
+                          disabled={paystackStatus === "processing" || getDonationAmount() <= 0}
+                        >
+                          {paystackStatus === "processing" ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <CreditCard className="h-4 w-4 mr-2" />
+                              Pay Securely
+                            </>
+                          )}
+                        </Button>
+                        {paystackMessage ? (
+                          <div
+                            className={`rounded-lg border p-3 text-sm ${
+                              paystackStatus === "success"
+                                ? "border-green-300 bg-green-50 text-green-900"
+                                : paystackStatus === "error"
+                                  ? "border-red-300 bg-red-50 text-red-900"
+                                  : "border-blue-300 bg-blue-50 text-blue-900"
+                            }`}
+                          >
+                            {paystackMessage}
                           </div>
                         ) : null}
                       </div>
@@ -321,113 +482,7 @@ const Donate = () => {
                     </div>
                   ) : null}
 
-                  {selectedPaymentMethod === "Credit Card" ? (
-                    <div className="p-4 border rounded-lg bg-muted">
-                      <div className="flex items-center gap-2 font-semibold mb-3">
-                        <Shield className="h-5 w-5 text-primary" />
-                        Secure Card Payment — Visa, MasterCard accepted
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        A secure payment gateway processes your transaction in seconds. This website
-                        securely encrypts your card details, sends them to the payment processor, and
-                        verifies the funds with your bank before transferring your donation to the
-                        organization.
-                      </p>
-                      <div className="grid gap-4">
-                        <div>
-                          <Label htmlFor="cardName" className="font-semibold mb-1 block">
-                            Name on Card
-                          </Label>
-                          <Input
-                            id="cardName"
-                            value={cardName}
-                            onChange={(event) => setCardName(event.target.value)}
-                            placeholder="Enter name as shown on card"
-                            autoComplete="cc-name"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="cardNumber" className="font-semibold mb-1 block">
-                            Card Number
-                          </Label>
-                          <Input
-                            id="cardNumber"
-                            value={cardNumber}
-                            onChange={(event) => setCardNumber(formatCardNumber(event.target.value))}
-                            placeholder="1234 5678 9012 3456"
-                            inputMode="numeric"
-                            autoComplete="cc-number"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="cardExpiry" className="font-semibold mb-1 block">
-                              Expiry Date
-                            </Label>
-                            <Input
-                              id="cardExpiry"
-                              value={cardExpiry}
-                              onChange={(event) => setCardExpiry(formatExpiry(event.target.value))}
-                              placeholder="MM/YY"
-                              inputMode="numeric"
-                              autoComplete="cc-exp"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="cardCvv" className="font-semibold mb-1 block">
-                              CVV
-                            </Label>
-                            <Input
-                              id="cardCvv"
-                              value={cardCvv}
-                              onChange={(event) => setCardCvv(event.target.value.replace(/\D/g, "").slice(0, 4))}
-                              placeholder="123"
-                              inputMode="numeric"
-                              autoComplete="cc-csc"
-                              type="password"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <div className="font-semibold mb-1">Donation Amount</div>
-                          <div className="text-lg text-primary">
-                            KSh {getDonationAmount().toLocaleString()}
-                          </div>
-                        </div>
-                        <Button
-                          onClick={handleCardPayment}
-                          disabled={cardStatus === "processing"}
-                        >
-                          {cardStatus === "processing" ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Processing securely...
-                            </>
-                          ) : (
-                            <>
-                              <Shield className="h-4 w-4 mr-2" />
-                              Pay Securely
-                            </>
-                          )}
-                        </Button>
-                        {cardStatusMessage ? (
-                          <div
-                            className={`rounded-lg border p-3 text-sm ${
-                              cardStatus === "success"
-                                ? "border-green-300 bg-green-50 text-green-900"
-                                : cardStatus === "error"
-                                  ? "border-red-300 bg-red-50 text-red-900"
-                                  : "border-blue-300 bg-blue-50 text-blue-900"
-                            }`}
-                          >
-                            {cardStatusMessage}
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {selectedPaymentMethod === "Bank Transfer" || selectedPaymentMethod === "M-Pesa" || selectedPaymentMethod === "PayPal" || !selectedPaymentMethod ? (
+                  {selectedPaymentMethod === "Bank Transfer" || selectedPaymentMethod === "M-Pesa" || selectedPaymentMethod === "PayPal" || selectedPaymentMethod === "Credit Card" || !selectedPaymentMethod ? (
                   <div className="p-4 border rounded-lg bg-muted">
                     <div className="font-semibold mb-1">Account Name:</div>
                     <div className="text-lg text-primary mb-1">Kibera Girls Soccer Academy</div>

@@ -29,6 +29,17 @@ npm i
 npm run dev
 ```
 
+## Environment variables
+
+This app uses Paystack for credit card donations. Create a `.env` file for the backend and use the sample values in `.env.example`.
+
+- `PAYSTACK_SECRET_KEY` — your Paystack secret key (backend only)
+- `FRONTEND_URL` — e.g. `http://localhost:8080`
+- `VITE_PAYSTACK_PUBLIC_KEY` — your Paystack public key for the frontend
+- `VITE_API_BASE_URL` — the backend API URL, e.g. `http://localhost:3000`
+
+Make sure the backend is running separately on the configured API URL when testing Paystack.
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).
