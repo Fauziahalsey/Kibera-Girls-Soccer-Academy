@@ -1,6 +1,9 @@
-const PESAPAL_CONSUMER_KEY = process.env.PESAPAL_CONSUMER_KEY ?? "";
-const PESAPAL_CONSUMER_SECRET = process.env.PESAPAL_CONSUMER_SECRET ?? "";
-const PESAPAL_IPN_ID = process.env.PESAPAL_IPN_ID ?? "";
+const PESAPAL_CONSUMER_KEY =
+  process.env.PESAPAL_CONSUMER_KEY ?? "X4e369i6izufetR8Y6R2drAfeFZ74pvh";
+const PESAPAL_CONSUMER_SECRET =
+  process.env.PESAPAL_CONSUMER_SECRET ?? "6PhHqPDc0fobS93yyKjom5y+CJE=";
+const PESAPAL_IPN_ID =
+  process.env.PESAPAL_IPN_ID ?? "b950f3ed-8445-421e-a00f-da49e9823757";
 
 const pesapalEnv = process.env.PESAPAL_ENV ?? "production";
 
@@ -56,9 +59,7 @@ export interface BillingAddress {
 
 export async function getPesapalToken(): Promise<string> {
   if (!PESAPAL_CONSUMER_KEY || !PESAPAL_CONSUMER_SECRET) {
-    throw new Error(
-      "Pesapal is not set up yet. Add PESAPAL_CONSUMER_KEY and PESAPAL_CONSUMER_SECRET in Vercel environment variables."
-    );
+    throw new Error("Pesapal payment credentials are missing.");
   }
 
   const res = await fetch(`${PESAPAL_BASE_URL}/api/Auth/RequestToken`, {
