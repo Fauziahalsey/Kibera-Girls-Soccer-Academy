@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { BACKEND_URL, registerPesapalIpn } from "../../lib/pesapal";
+import { BACKEND_URL, registerPesapalIpn } from "../../../lib/pesapal";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {

@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { handlePesapalIpn } from "../../lib/pesapal";
+import { handlePesapalIpn } from "../../../lib/pesapal";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") {
