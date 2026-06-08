@@ -2,8 +2,10 @@ const PESAPAL_CONSUMER_KEY = process.env.PESAPAL_CONSUMER_KEY ?? "";
 const PESAPAL_CONSUMER_SECRET = process.env.PESAPAL_CONSUMER_SECRET ?? "";
 const PESAPAL_IPN_ID = process.env.PESAPAL_IPN_ID ?? "";
 
+const pesapalEnv = process.env.PESAPAL_ENV ?? "production";
+
 export const PESAPAL_BASE_URL =
-  process.env.PESAPAL_ENV === "production"
+  pesapalEnv === "production"
     ? "https://pay.pesapal.com/v3"
     : "https://cybqa.pesapal.com/pesapalv3";
 
