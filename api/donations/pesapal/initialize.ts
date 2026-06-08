@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { initializePesapalPayment } from "../../../lib/pesapal";
+import { initializePesapalPayment } from "../../_utils/pesapal";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
