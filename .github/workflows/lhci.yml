@@ -20,5 +20,7 @@ jobs:
         run: npm run build
       - name: Serve dist
         run: npx http-server ./dist -p 8080 &
+      - name: Wait for site
+        run: npx wait-on http://127.0.0.1:8080 -t 30000
       - name: Run LHCI autorun
         run: npx lhci autorun --upload.target=temporary-public-storage

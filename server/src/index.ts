@@ -11,10 +11,26 @@ dotenv.config();
 const app: Express = express();
 const port = process.env.PORT || 3000;
 const frontendUrl = process.env.FRONTEND_URL || "http://localhost:8080";
+const allowedOrigins = [
+  frontendUrl,
+  "http://localhost:8080",
+  "http://127.0.0.1:8080",
+  "http://localhost:4173",
+  "http://127.0.0.1:4173",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000"
+];
 
 // Middleware
 app.use(cors({
-  origin: frontendUrl,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error(`CORS blocked origin: ${origin}`));
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
