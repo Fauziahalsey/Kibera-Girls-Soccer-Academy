@@ -432,7 +432,7 @@ const Donate = () => {
                     <div className="font-semibold mb-1">Account Name:</div>
                     <div className="text-lg text-primary mb-1">Kibera Girls Soccer Academy</div>
                     <div className="font-semibold mb-1">Account Number:</div>
-                    <div className="text-lg text-primary mb-1">0708013099</div>
+                    <div className="text-lg text-primary mb-1">{mpesaAccountNumber}</div>
                     <div className="font-semibold mb-1">Bank Name:</div>
                     <div className="text-sm text-muted-foreground">Absa Bank Kenya PLC</div>
                   </div>
