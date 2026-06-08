@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { getApiBaseUrl } from "@/lib/api";
 
 const DonateCallback = () => {
   const [searchParams] = useSearchParams();
@@ -66,7 +67,7 @@ const DonateCallback = () => {
     };
 
     verifyPayment();
-  }, [searchParams, apiBaseUrl]);
+  }, [searchParams]);
 
   return (
     <div className="min-h-screen flex items-center justify-center py-16 px-4">

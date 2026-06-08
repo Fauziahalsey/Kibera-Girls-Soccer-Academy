@@ -17,6 +17,7 @@ import {
   Shield
 } from "lucide-react";
 import { useState } from "react";
+import { getApiBaseUrl } from "@/lib/api";
 
 const Donate = () => {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
@@ -32,8 +33,7 @@ const Donate = () => {
 
   const mpesaPaybill = "303030";
   const mpesaAccountNumber = "2023525383";
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, "") || "";
-  const donationApiUrl = `${apiBaseUrl}/api/donations`;
+  const donationApiUrl = `${getApiBaseUrl()}/api/donations`;
 
   const getDonationAmount = () => {
     if (selectedAmount !== null) return selectedAmount;
@@ -99,7 +99,7 @@ const Donate = () => {
       setPesapalStatus("error");
       if (error instanceof TypeError) {
         setPesapalMessage(
-          `Could not connect to the backend at ${donationApiUrl}. Make sure your server is running and VITE_API_BASE_URL is set correctly.`
+          "Could not reach the payment server. Please try again in a moment."
         );
       } else {
         setPesapalMessage(error instanceof Error ? error.message : "Payment initialization failed.");
