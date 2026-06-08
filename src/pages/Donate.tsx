@@ -33,6 +33,7 @@ const Donate = () => {
 
   const mpesaPaybill = "303030";
   const mpesaAccountNumber = "2023525383";
+  const pesapalMaxAmount = 2000;
   const donationApiUrl = `${getApiBaseUrl()}/api/donations`;
 
   const getDonationAmount = () => {
@@ -59,6 +60,14 @@ const Donate = () => {
     if (!donorEmail.trim()) {
       setPesapalStatus("error");
       setPesapalMessage("Email address is required for card payment.");
+      return;
+    }
+
+    if (amount > pesapalMaxAmount) {
+      setPesapalStatus("error");
+      setPesapalMessage(
+        `Card payments are limited to KSh ${pesapalMaxAmount.toLocaleString()} per transaction. Please choose a lower amount, or use M-Pesa or bank transfer for larger donations.`
+      );
       return;
     }
 
@@ -212,14 +221,22 @@ const Donate = () => {
               <CardContent className="space-y-6">
                 {/* Preset Amounts */}
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {donationOptions.map((option, index) => (
+                  {donationOptions.map((option, index) => {
+                    const cardLimitExceeded =
+                      selectedPaymentMethod === "Credit Card" && option.amount > pesapalMaxAmount;
+                    return (
                     <div
                       key={index}
                       onClick={() => {
+                        if (cardLimitExceeded) return;
                         setSelectedAmount(option.amount);
                         setCustomAmount("");
                       }}
-                      className={`p-4 border rounded-lg cursor-pointer transition-all hover:border-primary ${
+                      className={`p-4 border rounded-lg transition-all ${
+                        cardLimitExceeded
+                          ? "opacity-40 cursor-not-allowed border-border"
+                          : "cursor-pointer hover:border-primary"
+                      } ${
                         selectedAmount === option.amount
                           ? "border-primary bg-primary/5"
                           : "border-border"
@@ -229,8 +246,12 @@ const Donate = () => {
                         KSh {option.amount.toLocaleString()}
                       </div>
                       <div className="text-sm text-muted-foreground mt-1">{option.impact}</div>
+                      {cardLimitExceeded ? (
+                        <div className="text-xs text-amber-700 mt-2">Use M-Pesa for this amount</div>
+                      ) : null}
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
 
                 {/* Custom Amount */}
@@ -242,12 +263,24 @@ const Donate = () => {
                     id="customAmount"
                     type="number"
                     min={100}
+                    max={selectedPaymentMethod === "Credit Card" ? pesapalMaxAmount : undefined}
                     value={customAmount}
                     onChange={(e) => {
-                      setCustomAmount(e.target.value);
+                      let value = e.target.value;
+                      if (
+                        selectedPaymentMethod === "Credit Card" &&
+                        Number(value) > pesapalMaxAmount
+                      ) {
+                        value = String(pesapalMaxAmount);
+                      }
+                      setCustomAmount(value);
                       setSelectedAmount(null);
                     }}
-                    placeholder="Enter amount in KSh"
+                    placeholder={
+                      selectedPaymentMethod === "Credit Card"
+                        ? `Enter amount up to KSh ${pesapalMaxAmount.toLocaleString()}`
+                        : "Enter amount in KSh"
+                    }
                   />
                 </div>
 
@@ -266,6 +299,11 @@ const Donate = () => {
                             if (method.name === "Credit Card") {
                               setPesapalStatus("idle");
                               setPesapalMessage("");
+                              const amount = getDonationAmount();
+                              if (amount > pesapalMaxAmount) {
+                                setSelectedAmount(pesapalMaxAmount);
+                                setCustomAmount("");
+                              }
                             }
                           }}
                           className={`p-4 border rounded-lg cursor-pointer transition-all ${
@@ -360,9 +398,13 @@ const Donate = () => {
                         <CreditCard className="h-5 w-5 text-primary" />
                         Secure Card Payment — Visa, MasterCard accepted
                       </div>
-                      <p className="text-sm text-muted-foreground mb-4">
+                      <p className="text-sm text-muted-foreground mb-2">
                         Powered by Pesapal. You will be securely redirected to enter your card
                         details. Funds are settled directly to our Absa bank account.
+                      </p>
+                      <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                        Card payments are limited to <strong>KSh {pesapalMaxAmount.toLocaleString()}</strong> per
+                        transaction. For larger donations, please use M-Pesa or bank transfer.
                       </p>
 
                       {/* Trust badges */}
@@ -419,7 +461,12 @@ const Donate = () => {
 
                         <Button
                           onClick={handlePesapalPayment}
-                          disabled={pesapalStatus === "processing" || getDonationAmount() <= 0}
+                          disabled={
+                            pesapalStatus === "processing" ||
+                            getDonationAmount() <= 0 ||
+                            getDonationAmount() > pesapalMaxAmount ||
+                            !donorEmail.trim()
+                          }
                           className="w-full"
                         >
                           {pesapalStatus === "processing" ? (
