@@ -13,7 +13,8 @@ import {
   Trophy,
   CheckCircle,
   DollarSign,
-  Loader2
+  Loader2,
+  Shield
 } from "lucide-react";
 import { useState } from "react";
 
@@ -26,12 +27,11 @@ const Donate = () => {
   const [donorPhone, setDonorPhone] = useState("");
   const [donorStatus, setDonorStatus] = useState("");
   const [copiedLink, setCopiedLink] = useState(false);
-  const [flwStatus, setFlwStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
-  const [flwMessage, setFlwMessage] = useState("");
+  const [pesapalStatus, setPesapalStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
+  const [pesapalMessage, setPesapalMessage] = useState("");
 
   const mpesaPaybill = "303030";
   const mpesaAccountNumber = "2023525383";
-  const flutterwavePublicKey = import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY as string;
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, "") || "";
   const donationApiUrl = `${apiBaseUrl}/api/donations`;
 
@@ -41,119 +41,69 @@ const Donate = () => {
     return Number.isFinite(custom) && custom > 0 ? custom : 0;
   };
 
-  const loadFlutterwaveScript = async () => {
-    if ((window as any).FlutterwaveCheckout) return;
-    return new Promise<void>((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = "https://checkout.flutterwave.com/v3.js";
-      script.async = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error("Failed to load Flutterwave script"));
-      document.body.appendChild(script);
-    });
-  };
-
-  const handleFlutterwavePayment = async () => {
+  // Pesapal flow:
+  // 1. Frontend calls your backend → backend calls Pesapal API to create order
+  // 2. Backend returns a redirect URL (Pesapal hosted payment page)
+  // 3. Frontend redirects user to that URL
+  // 4. After payment, Pesapal redirects back to your callback_url
+  // 5. Backend receives IPN (Instant Payment Notification) and verifies
+  const handlePesapalPayment = async () => {
     const amount = getDonationAmount();
 
-    if (!flutterwavePublicKey) {
-      setFlwStatus("error");
-      setFlwMessage("Flutterwave public key is not configured. Please set VITE_FLUTTERWAVE_PUBLIC_KEY in your .env file.");
+    if (!amount || amount <= 0) {
+      setPesapalStatus("error");
+      setPesapalMessage("Please enter a valid donation amount.");
       return;
     }
 
-    if (!amount || amount <= 0) {
-      setFlwStatus("error");
-      setFlwMessage("Please enter a valid donation amount.");
+    if (!donorEmail.trim()) {
+      setPesapalStatus("error");
+      setPesapalMessage("Email address is required for card payment.");
       return;
     }
 
     try {
-      setFlwStatus("processing");
-      setFlwMessage("Initializing payment...");
+      setPesapalStatus("processing");
+      setPesapalMessage("Initializing secure payment...");
 
-      await loadFlutterwaveScript();
-
-      const email =
-        donorEmail.trim() ||
-        `donation+${Date.now()}@noreply.kiberagirlssocceracademy.co.ke`;
-
-      const initializeRes = await fetch(`${donationApiUrl}/flutterwave/initialize`, {
+      // Call your backend to create a Pesapal order
+      const res = await fetch(`${donationApiUrl}/pesapal/initialize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount,
-          email,
-          donorName,
-          donorPhone,
-          message: "Donation to support students"
-        })
+          currency: "KES",
+          description: "Donation to Kibera Girls Soccer Academy",
+          callback_url: `${window.location.origin}/donate/callback`,
+          cancellation_url: `${window.location.origin}/donate`,
+          billing_address: {
+            email_address: donorEmail.trim(),
+            phone_number: donorPhone.trim() || undefined,
+            first_name: donorName.split(" ")[0] || "Donor",
+            last_name: donorName.split(" ").slice(1).join(" ") || undefined,
+          },
+        }),
       });
 
-      const initializeData = await initializeRes.json();
-      if (!initializeRes.ok || !initializeData.success) {
-        throw new Error(initializeData.message || "Unable to initialize Flutterwave payment.");
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to initialize Pesapal payment.");
       }
 
-      const tx_ref = initializeData.data.tx_ref;
+      // Redirect user to Pesapal hosted payment page
+      // Pesapal handles card entry, 3DS, OTP — all securely
+      window.location.href = data.redirect_url;
 
-      (window as any).FlutterwaveCheckout({
-        public_key: flutterwavePublicKey,
-        tx_ref,
-        amount,
-        currency: "KES",
-        payment_options: "card",
-        customer: {
-          email,
-          name: donorName || "Anonymous Donor",
-          phone_number: donorPhone || undefined,
-        },
-        customizations: {
-          title: "Kibera Girls Soccer Academy",
-          description: "Donation to support students",
-          logo: "https://www.kiberagirlssocceracademy.co.ke/logo.png",
-        },
-        callback: async (response: any) => {
-          if (response.status === "successful") {
-            try {
-              setFlwMessage("Verifying payment...");
-              const verifyRes = await fetch(
-                `${donationApiUrl}/flutterwave/verify?tx_ref=${encodeURIComponent(response.tx_ref)}`
-              );
-              const verifyData = await verifyRes.json();
-
-              if (verifyData.success) {
-                setFlwStatus("success");
-                setFlwMessage(`Payment successful! Reference: ${response.tx_ref}`);
-              } else {
-                setFlwStatus("error");
-                setFlwMessage(verifyData.message || "Payment verification failed. Please contact support.");
-              }
-            } catch {
-              setFlwStatus("error");
-              setFlwMessage(
-                `Could not reach the verification endpoint at ${donationApiUrl}. Please ensure your backend is running.`
-              );
-            }
-          } else {
-            setFlwStatus("error");
-            setFlwMessage("Payment was not completed successfully.");
-          }
-        },
-        onclose: () => {
-          if (flwStatus !== "success") {
-            setFlwStatus("error");
-            setFlwMessage("Payment window closed before completion.");
-          }
-        },
-      });
-
-      // Modal is now open — reset processing indicator
-      setFlwStatus("idle");
-      setFlwMessage("");
     } catch (error) {
-      setFlwStatus("error");
-      setFlwMessage(error instanceof Error ? error.message : "Payment initialisation failed.");
+      setPesapalStatus("error");
+      if (error instanceof TypeError) {
+        setPesapalMessage(
+          `Could not connect to the backend at ${donationApiUrl}. Make sure your server is running and VITE_API_BASE_URL is set correctly.`
+        );
+      } else {
+        setPesapalMessage(error instanceof Error ? error.message : "Payment initialization failed.");
+      }
     }
   };
 
@@ -311,8 +261,8 @@ const Donate = () => {
                           onClick={() => {
                             setSelectedPaymentMethod(method.name);
                             if (method.name === "Credit Card") {
-                              setFlwStatus("idle");
-                              setFlwMessage("");
+                              setPesapalStatus("idle");
+                              setPesapalMessage("");
                             }
                           }}
                           className={`p-4 border rounded-lg cursor-pointer transition-all ${
@@ -400,7 +350,7 @@ const Donate = () => {
                     </div>
                   )}
 
-                  {/* Credit Card — Flutterwave */}
+                  {/* Credit Card — Pesapal */}
                   {selectedPaymentMethod === "Credit Card" && (
                     <div className="p-4 border rounded-lg bg-muted">
                       <div className="flex items-center gap-2 font-semibold mb-3">
@@ -408,39 +358,50 @@ const Donate = () => {
                         Secure Card Payment — Visa, MasterCard accepted
                       </div>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Powered by Flutterwave. A secure payment modal will open to collect your
-                        card details safely. Your card information is never stored on our servers.
+                        Powered by Pesapal. You will be securely redirected to enter your card
+                        details. Funds are settled directly to our Absa bank account.
                       </p>
+
+                      {/* Trust badges */}
+                      <div className="flex items-center gap-2 mb-4 text-xs text-muted-foreground">
+                        <Shield className="h-4 w-4 text-green-600" />
+                        <span>256-bit SSL encrypted · 3D Secure · PCI DSS compliant</span>
+                      </div>
+
                       <div className="grid gap-4">
                         <div>
-                          <Label htmlFor="flwName" className="font-semibold mb-1 block">
+                          <Label htmlFor="pesapalName" className="font-semibold mb-1 block">
                             Full Name
                           </Label>
                           <Input
-                            id="flwName"
+                            id="pesapalName"
                             value={donorName}
                             onChange={(e) => setDonorName(e.target.value)}
                             placeholder="Enter your full name"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="flwEmail" className="font-semibold mb-1 block">
-                            Email Address
+                          <Label htmlFor="pesapalEmail" className="font-semibold mb-1 block">
+                            Email Address <span className="text-red-500">*</span>
                           </Label>
                           <Input
-                            id="flwEmail"
+                            id="pesapalEmail"
                             type="email"
                             value={donorEmail}
                             onChange={(e) => setDonorEmail(e.target.value)}
                             placeholder="you@example.com"
                           />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            A payment receipt will be sent to this email.
+                          </p>
                         </div>
                         <div>
-                          <Label htmlFor="flwPhone" className="font-semibold mb-1 block">
-                            Phone Number <span className="text-muted-foreground font-normal">(optional)</span>
+                          <Label htmlFor="pesapalPhone" className="font-semibold mb-1 block">
+                            Phone Number{" "}
+                            <span className="text-muted-foreground font-normal">(optional)</span>
                           </Label>
                           <Input
-                            id="flwPhone"
+                            id="pesapalPhone"
                             value={donorPhone}
                             onChange={(e) => setDonorPhone(e.target.value)}
                             placeholder="e.g. 0712345678"
@@ -448,37 +409,45 @@ const Donate = () => {
                         </div>
                         <div>
                           <div className="font-semibold mb-1">Donation Amount</div>
-                          <div className="text-lg text-primary">
+                          <div className="text-2xl font-bold text-primary">
                             KSh {getDonationAmount().toLocaleString()}
                           </div>
                         </div>
+
                         <Button
-                          onClick={handleFlutterwavePayment}
-                          disabled={flwStatus === "processing" || getDonationAmount() <= 0}
+                          onClick={handlePesapalPayment}
+                          disabled={pesapalStatus === "processing" || getDonationAmount() <= 0}
+                          className="w-full"
                         >
-                          {flwStatus === "processing" ? (
+                          {pesapalStatus === "processing" ? (
                             <>
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Processing...
+                              Redirecting to Pesapal...
                             </>
                           ) : (
                             <>
                               <CreditCard className="h-4 w-4 mr-2" />
-                              Pay Securely with Flutterwave
+                              Pay Securely with Pesapal
                             </>
                           )}
                         </Button>
-                        {flwMessage && (
+
+                        <p className="text-xs text-center text-muted-foreground">
+                          You will be redirected to Pesapal's secure payment page to complete
+                          your donation. Funds settle to our Absa account within 1–3 business days.
+                        </p>
+
+                        {pesapalMessage && (
                           <div
                             className={`rounded-lg border p-3 text-sm ${
-                              flwStatus === "success"
+                              pesapalStatus === "success"
                                 ? "border-green-300 bg-green-50 text-green-900"
-                                : flwStatus === "error"
+                                : pesapalStatus === "error"
                                 ? "border-red-300 bg-red-50 text-red-900"
                                 : "border-blue-300 bg-blue-50 text-blue-900"
                             }`}
                           >
-                            {flwMessage}
+                            {pesapalMessage}
                           </div>
                         )}
                       </div>
