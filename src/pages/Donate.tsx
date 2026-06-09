@@ -90,9 +90,7 @@ const Donate = () => {
   const [currency, setCurrency] = useState<Currency>("KES");
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<"Credit Card" | "Bank Transfer" | null>(
-    null
-  );
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
   const [donorName, setDonorName] = useState("");
   const [donorEmail, setDonorEmail] = useState("");
   const [donorPhone, setDonorPhone] = useState("");
@@ -420,7 +418,7 @@ const Donate = () => {
                   <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                     Payment method
                   </Label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {paymentMethods.map((method) => {
                       const Icon = method.icon;
                       const isSelected = selectedPaymentMethod === method.name;
@@ -430,13 +428,13 @@ const Donate = () => {
                           type="button"
                           onClick={() => {
                             setSelectedPaymentMethod(method.name);
-                            if (method.name === "Credit Card") {
-                              setPesapalStatus("idle");
-                              setPesapalMessage("");
-                              if (cardMax && amount > cardMax) {
-                                setSelectedAmount(cardMax);
-                                setCustomAmount("");
-                              }
+                            setPesapalStatus("idle");
+                            setPesapalMessage("");
+                            setPaystackStatus("idle");
+                            setPaystackMessage("");
+                            if (method.name === "Credit Card" && cardMax && amount > cardMax) {
+                              setSelectedAmount(cardMax);
+                              setCustomAmount("");
                             }
                           }}
                           className={`p-5 rounded-xl border-2 text-left transition-all ${
@@ -558,6 +556,97 @@ const Donate = () => {
                           }`}
                         >
                           {pesapalMessage}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Paystack */}
+                  {selectedPaymentMethod === "Paystack" && (
+                    <div className="rounded-xl border bg-gradient-to-br from-muted/80 to-muted/30 p-6 space-y-5">
+                      <div className="flex items-start gap-3">
+                        <Shield className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="font-semibold">Pay securely with Paystack</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Pay by card, M-Pesa, or bank on Paystack&apos;s secure checkout page.
+                            Supports larger donations in {currency}.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div className="sm:col-span-2">
+                          <Label htmlFor="paystackName">Full name</Label>
+                          <Input
+                            id="paystackName"
+                            value={donorName}
+                            onChange={(e) => setDonorName(e.target.value)}
+                            placeholder="Your full name"
+                            className="mt-1.5"
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <Label htmlFor="paystackEmail">
+                            Email <span className="text-destructive">*</span>
+                          </Label>
+                          <Input
+                            id="paystackEmail"
+                            type="email"
+                            value={donorEmail}
+                            onChange={(e) => setDonorEmail(e.target.value)}
+                            placeholder="you@example.com"
+                            className="mt-1.5"
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <Label htmlFor="paystackPhone">
+                            Phone <span className="text-muted-foreground font-normal">(optional)</span>
+                          </Label>
+                          <Input
+                            id="paystackPhone"
+                            value={donorPhone}
+                            onChange={(e) => setDonorPhone(e.target.value)}
+                            placeholder="+254 7XX XXX XXX"
+                            className="mt-1.5"
+                          />
+                        </div>
+                      </div>
+
+                      <Button
+                        onClick={handlePaystackPayment}
+                        disabled={
+                          paystackStatus === "processing" || amount <= 0 || !donorEmail.trim()
+                        }
+                        size="lg"
+                        className="w-full h-12 text-base"
+                      >
+                        {paystackStatus === "processing" ? (
+                          <>
+                            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                            Redirecting to Paystack...
+                          </>
+                        ) : (
+                          <>
+                            <Wallet className="h-5 w-5 mr-2" />
+                            Pay {amount > 0 ? formatMoney(amount, currency) : ""} with Paystack
+                          </>
+                        )}
+                      </Button>
+
+                      <p className="text-xs text-center text-muted-foreground">
+                        Secured by Paystack · 256-bit SSL · PCI DSS compliant
+                      </p>
+
+                      {paystackMessage && (
+                        <div
+                          className={`rounded-lg border p-3 text-sm ${
+                            paystackStatus === "error"
+                              ? "border-red-300 bg-red-50 text-red-900"
+                              : "border-blue-300 bg-blue-50 text-blue-900"
+                          }`}
+                        >
+                          {paystackMessage}
                         </div>
                       )}
                     </div>
