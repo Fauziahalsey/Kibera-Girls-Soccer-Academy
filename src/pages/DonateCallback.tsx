@@ -17,38 +17,34 @@ const DonateCallback = () => {
     message?: string;
   }>({});
 
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, "") || "";
+  const apiBaseUrl = getApiBaseUrl();
 
   useEffect(() => {
     const orderTrackingId = searchParams.get("OrderTrackingId");
+    const paystackReference = searchParams.get("reference");
+    const provider = searchParams.get("provider");
 
-    if (!orderTrackingId) {
+    if (!orderTrackingId && !paystackReference) {
       setStatus("error");
-      setDetails({ message: "Missing payment reference from Pesapal." });
-      return;
-    }
-
-    if (!apiBaseUrl) {
-      setStatus("error");
-      setDetails({
-        message:
-          "Payment verification is not configured. Set VITE_API_BASE_URL to your backend server URL.",
-      });
+      setDetails({ message: "Missing payment reference." });
       return;
     }
 
     const verifyPayment = async () => {
       try {
-        const response = await fetch(
-          `${apiBaseUrl}/api/donations/pesapal/verify?order_tracking_id=${encodeURIComponent(orderTrackingId)}`
-        );
+        const isPaystack = Boolean(paystackReference) && (provider === "paystack" || !orderTrackingId);
+        const verifyUrl = isPaystack
+          ? `${apiBaseUrl}/api/donations/paystack/verify?reference=${encodeURIComponent(paystackReference!)}`
+          : `${apiBaseUrl}/api/donations/pesapal/verify?order_tracking_id=${encodeURIComponent(orderTrackingId!)}`;
+
+        const response = await fetch(verifyUrl);
         const data = await response.json();
 
         setDetails({
           amount: data.data?.amount,
           currency: data.data?.currency,
-          payment_method: data.data?.payment_method,
-          order_tracking_id: orderTrackingId,
+          payment_method: data.data?.payment_method || data.data?.channel,
+          order_tracking_id: orderTrackingId || paystackReference || undefined,
           message: data.data?.description || data.message,
         });
 
@@ -67,7 +63,7 @@ const DonateCallback = () => {
     };
 
     verifyPayment();
-  }, [searchParams]);
+  }, [searchParams, apiBaseUrl]);
 
   return (
     <div className="min-h-screen flex items-center justify-center py-16 px-4">
@@ -96,7 +92,7 @@ const DonateCallback = () => {
         <CardContent className="space-y-4 text-center">
           {status === "loading" && (
             <p className="text-sm text-muted-foreground">
-              Please wait while we confirm your payment with Pesapal.
+              Please wait while we confirm your payment.
             </p>
           )}
 

@@ -17,6 +17,7 @@ import {
   Globe,
   Copy,
   Check,
+  Wallet,
 } from "lucide-react";
 import { useState } from "react";
 import { getApiBaseUrl } from "@/lib/api";
@@ -67,6 +68,8 @@ const KES_PER: Record<Currency, number> = { KES: 1, USD: 130, EUR: 140 };
 
 const bankAccountNumber = "2023525383";
 
+type PaymentMethod = "Credit Card" | "Paystack" | "Bank Transfer";
+
 function formatMoney(amount: number, currency: Currency): string {
   const { symbol } = CURRENCIES[currency];
   const formatted = amount.toLocaleString(undefined, {
@@ -96,6 +99,8 @@ const Donate = () => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [pesapalStatus, setPesapalStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
   const [pesapalMessage, setPesapalMessage] = useState("");
+  const [paystackStatus, setPaystackStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
+  const [paystackMessage, setPaystackMessage] = useState("");
 
   const donationApiUrl = `${getApiBaseUrl()}/api/donations`;
   const { cardMax } = CURRENCIES[currency];
@@ -119,6 +124,8 @@ const Donate = () => {
     setCustomAmount("");
     setPesapalStatus("idle");
     setPesapalMessage("");
+    setPaystackStatus("idle");
+    setPaystackMessage("");
     if (selectedPaymentMethod === "Credit Card" && CURRENCIES[next].cardMax) {
       const amount = getDonationAmount();
       if (amount > CURRENCIES[next].cardMax!) {
@@ -195,10 +202,66 @@ const Donate = () => {
     }
   };
 
+  const handlePaystackPayment = async () => {
+    const amount = getDonationAmount();
+
+    if (!amount || amount <= 0) {
+      setPaystackStatus("error");
+      setPaystackMessage("Please enter a valid donation amount.");
+      return;
+    }
+
+    if (!donorEmail.trim()) {
+      setPaystackStatus("error");
+      setPaystackMessage("Email address is required for payment.");
+      return;
+    }
+
+    try {
+      setPaystackStatus("processing");
+      setPaystackMessage("Initializing secure payment...");
+
+      const res = await fetch(`${donationApiUrl}/paystack/initialize`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount,
+          currency,
+          email: donorEmail.trim(),
+          donorName: donorName.trim() || "Anonymous Donor",
+          phone: donorPhone.trim() || "",
+          callback_url: `${window.location.origin}/donate/callback?provider=paystack`,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to initialize Paystack payment.");
+      }
+
+      if (!data.authorization_url) {
+        throw new Error("Payment link was not received. Please try again.");
+      }
+
+      window.location.assign(data.authorization_url);
+    } catch (error) {
+      setPaystackStatus("error");
+      if (error instanceof TypeError) {
+        setPaystackMessage("Could not reach the payment server. Please try again in a moment.");
+      } else {
+        setPaystackMessage(error instanceof Error ? error.message : "Payment initialization failed.");
+      }
+    }
+  };
+
   const paymentMethods = [
-    { name: "Credit Card" as const, icon: CreditCard, description: "Visa, MasterCard — secure checkout" },
+    { name: "Credit Card" as const, icon: CreditCard, description: "Visa, MasterCard via Pesapal" },
+    { name: "Paystack" as const, icon: Wallet, description: "Card, M-Pesa & bank via Paystack" },
     { name: "Bank Transfer" as const, icon: Building, description: "Direct transfer to our account" },
   ];
+
+  const isPesapalLimited = selectedPaymentMethod === "Credit Card" && cardMax !== null;
 
   const amount = getDonationAmount();
 
@@ -295,7 +358,7 @@ const Donate = () => {
                             {option.impact}
                           </div>
                           {cardBlocked && (
-                            <div className="text-xs text-amber-700 mt-2">Use bank transfer</div>
+                            <div className="text-xs text-amber-700 mt-2">Use Paystack or bank transfer</div>
                           )}
                         </button>
                       );
