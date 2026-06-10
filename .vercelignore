@@ -13,5 +13,6 @@ bun.lockb
 src/assets/*.jpg
 src/assets/*.jpeg
 src/assets/*.png
+!src/assets/kgsa.png
 public/assets/
 .env*
