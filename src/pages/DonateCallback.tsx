@@ -4,6 +4,19 @@ import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getApiBaseUrl } from "@/lib/api";
+import { readJsonResponse } from "@/lib/http";
+
+type VerifyResponse = {
+  success?: boolean;
+  message?: string;
+  data?: {
+    amount?: number;
+    currency?: string;
+    payment_method?: string;
+    channel?: string;
+    description?: string;
+  };
+};
 
 const DonateCallback = () => {
   const [searchParams] = useSearchParams();
@@ -22,9 +35,12 @@ const DonateCallback = () => {
   useEffect(() => {
     const orderTrackingId = searchParams.get("OrderTrackingId");
     const paystackReference = searchParams.get("reference");
+    const intasendInvoiceId =
+      searchParams.get("invoice_id") || searchParams.get("invoice") || searchParams.get("id");
+    const intasendApiRef = searchParams.get("api_ref") || searchParams.get("tracking_id");
     const provider = searchParams.get("provider");
 
-    if (!orderTrackingId && !paystackReference) {
+    if (!orderTrackingId && !paystackReference && !intasendInvoiceId && !intasendApiRef) {
       setStatus("error");
       setDetails({ message: "Missing payment reference." });
       return;
@@ -33,18 +49,30 @@ const DonateCallback = () => {
     const verifyPayment = async () => {
       try {
         const isPaystack = Boolean(paystackReference) && (provider === "paystack" || !orderTrackingId);
-        const verifyUrl = isPaystack
+        const isIntasend =
+          provider === "intasend" || Boolean(intasendInvoiceId) || Boolean(intasendApiRef);
+        const intasendQuery = new URLSearchParams();
+        if (intasendInvoiceId) intasendQuery.set("invoice_id", intasendInvoiceId);
+        if (intasendApiRef) intasendQuery.set("api_ref", intasendApiRef);
+        const verifyUrl = isIntasend
+          ? `${apiBaseUrl}/api/donations/intasend/verify?${intasendQuery.toString()}`
+          : isPaystack
           ? `${apiBaseUrl}/api/donations/paystack/verify?reference=${encodeURIComponent(paystackReference!)}`
           : `${apiBaseUrl}/api/donations/pesapal/verify?order_tracking_id=${encodeURIComponent(orderTrackingId!)}`;
 
         const response = await fetch(verifyUrl);
-        const data = await response.json();
+        const data = await readJsonResponse<VerifyResponse>(response);
 
         setDetails({
           amount: data.data?.amount,
           currency: data.data?.currency,
           payment_method: data.data?.payment_method || data.data?.channel,
-          order_tracking_id: orderTrackingId || paystackReference || undefined,
+          order_tracking_id:
+            orderTrackingId ||
+            intasendInvoiceId ||
+            intasendApiRef ||
+            paystackReference ||
+            undefined,
           message: data.data?.description || data.message,
         });
 

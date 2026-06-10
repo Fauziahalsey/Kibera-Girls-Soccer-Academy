@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { getApiBaseUrl } from "@/lib/api";
+import { readJsonResponse } from "@/lib/http";
 
 type Currency = "KES" | "USD" | "EUR";
 
@@ -68,7 +69,14 @@ const KES_PER: Record<Currency, number> = { KES: 1, USD: 130, EUR: 140 };
 
 const bankAccountNumber = "2023525383";
 
-type PaymentMethod = "Credit Card" | "Paystack" | "Bank Transfer";
+type PaymentMethod = "Credit Card" | "IntaSend" | "Bank Transfer";
+
+type PaymentInitResponse = {
+  success?: boolean;
+  message?: string;
+  redirect_url?: string;
+  checkout_url?: string;
+};
 
 function formatMoney(amount: number, currency: Currency): string {
   const { symbol } = CURRENCIES[currency];
@@ -97,8 +105,8 @@ const Donate = () => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [pesapalStatus, setPesapalStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
   const [pesapalMessage, setPesapalMessage] = useState("");
-  const [paystackStatus, setPaystackStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
-  const [paystackMessage, setPaystackMessage] = useState("");
+  const [intasendStatus, setIntasendStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
+  const [intasendMessage, setIntasendMessage] = useState("");
 
   const donationApiUrl = `${getApiBaseUrl()}/api/donations`;
   const { cardMax } = CURRENCIES[currency];
@@ -122,8 +130,8 @@ const Donate = () => {
     setCustomAmount("");
     setPesapalStatus("idle");
     setPesapalMessage("");
-    setPaystackStatus("idle");
-    setPaystackMessage("");
+    setIntasendStatus("idle");
+    setIntasendMessage("");
     if (selectedPaymentMethod === "Credit Card" && CURRENCIES[next].cardMax) {
       const amount = getDonationAmount();
       if (amount > CURRENCIES[next].cardMax!) {
@@ -179,10 +187,10 @@ const Donate = () => {
         }),
       });
 
-      const data = await res.json();
+      const data = await readJsonResponse<PaymentInitResponse>(res);
 
       if (!res.ok || !data.success) {
-        throw new Error(data.message || "Failed to initialize Pesapal payment.");
+        throw new Error(data.message || `Failed to initialize Pesapal payment (${res.status}).`);
       }
 
       if (!data.redirect_url) {
@@ -200,26 +208,26 @@ const Donate = () => {
     }
   };
 
-  const handlePaystackPayment = async () => {
+  const handleIntasendPayment = async () => {
     const amount = getDonationAmount();
 
     if (!amount || amount <= 0) {
-      setPaystackStatus("error");
-      setPaystackMessage("Please enter a valid donation amount.");
+      setIntasendStatus("error");
+      setIntasendMessage("Please enter a valid donation amount.");
       return;
     }
 
     if (!donorEmail.trim()) {
-      setPaystackStatus("error");
-      setPaystackMessage("Email address is required for payment.");
+      setIntasendStatus("error");
+      setIntasendMessage("Email address is required for payment.");
       return;
     }
 
     try {
-      setPaystackStatus("processing");
-      setPaystackMessage("Initializing secure payment...");
+      setIntasendStatus("processing");
+      setIntasendMessage("Initializing secure payment...");
 
-      const res = await fetch(`${donationApiUrl}/paystack/initialize`, {
+      const res = await fetch(`${donationApiUrl}/intasend/initialize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -228,34 +236,34 @@ const Donate = () => {
           email: donorEmail.trim(),
           donorName: donorName.trim() || "Anonymous Donor",
           phone: donorPhone.trim() || "",
-          callback_url: `${window.location.origin}/donate/callback?provider=paystack`,
+          callback_url: `${window.location.origin}/donate/callback?provider=intasend`,
         }),
       });
 
-      const data = await res.json();
+      const data = await readJsonResponse<PaymentInitResponse>(res);
 
       if (!res.ok || !data.success) {
-        throw new Error(data.message || "Failed to initialize Paystack payment.");
+        throw new Error(data.message || `Failed to initialize IntaSend payment (${res.status}).`);
       }
 
-      if (!data.authorization_url) {
+      if (!data.checkout_url) {
         throw new Error("Payment link was not received. Please try again.");
       }
 
-      window.location.assign(data.authorization_url);
+      window.location.assign(data.checkout_url);
     } catch (error) {
-      setPaystackStatus("error");
+      setIntasendStatus("error");
       if (error instanceof TypeError) {
-        setPaystackMessage("Could not reach the payment server. Please try again in a moment.");
+        setIntasendMessage("Could not reach the payment server. Please try again in a moment.");
       } else {
-        setPaystackMessage(error instanceof Error ? error.message : "Payment initialization failed.");
+        setIntasendMessage(error instanceof Error ? error.message : "Payment initialization failed.");
       }
     }
   };
 
   const paymentMethods = [
     { name: "Credit Card" as const, icon: CreditCard, description: "Visa, MasterCard via Pesapal" },
-    { name: "Paystack" as const, icon: Wallet, description: "Card, M-Pesa & bank via Paystack" },
+    { name: "IntaSend" as const, icon: Wallet, description: "Card, M-Pesa & bank via IntaSend" },
     { name: "Bank Transfer" as const, icon: Building, description: "Direct transfer to our account" },
   ];
 
@@ -356,7 +364,7 @@ const Donate = () => {
                             {option.impact}
                           </div>
                           {cardBlocked && (
-                            <div className="text-xs text-amber-700 mt-2">Use Paystack or bank transfer</div>
+                            <div className="text-xs text-amber-700 mt-2">Use IntaSend or bank transfer</div>
                           )}
                         </button>
                       );
@@ -430,8 +438,8 @@ const Donate = () => {
                             setSelectedPaymentMethod(method.name);
                             setPesapalStatus("idle");
                             setPesapalMessage("");
-                            setPaystackStatus("idle");
-                            setPaystackMessage("");
+                            setIntasendStatus("idle");
+                            setIntasendMessage("");
                             if (method.name === "Credit Card" && cardMax && amount > cardMax) {
                               setSelectedAmount(cardMax);
                               setCustomAmount("");
@@ -561,15 +569,15 @@ const Donate = () => {
                     </div>
                   )}
 
-                  {/* Paystack */}
-                  {selectedPaymentMethod === "Paystack" && (
+                  {/* IntaSend */}
+                  {selectedPaymentMethod === "IntaSend" && (
                     <div className="rounded-xl border bg-gradient-to-br from-muted/80 to-muted/30 p-6 space-y-5">
                       <div className="flex items-start gap-3">
                         <Shield className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
                         <div>
-                          <p className="font-semibold">Pay securely with Paystack</p>
+                          <p className="font-semibold">Pay securely with IntaSend</p>
                           <p className="text-sm text-muted-foreground mt-1">
-                            Pay by card, M-Pesa, or bank on Paystack&apos;s secure checkout page.
+                            Pay by card, M-Pesa, or bank on IntaSend&apos;s secure checkout page.
                             Supports larger donations in {currency}.
                           </p>
                         </div>
@@ -577,9 +585,9 @@ const Donate = () => {
 
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="sm:col-span-2">
-                          <Label htmlFor="paystackName">Full name</Label>
+                          <Label htmlFor="intasendName">Full name</Label>
                           <Input
-                            id="paystackName"
+                            id="intasendName"
                             value={donorName}
                             onChange={(e) => setDonorName(e.target.value)}
                             placeholder="Your full name"
@@ -587,11 +595,11 @@ const Donate = () => {
                           />
                         </div>
                         <div className="sm:col-span-2">
-                          <Label htmlFor="paystackEmail">
+                          <Label htmlFor="intasendEmail">
                             Email <span className="text-destructive">*</span>
                           </Label>
                           <Input
-                            id="paystackEmail"
+                            id="intasendEmail"
                             type="email"
                             value={donorEmail}
                             onChange={(e) => setDonorEmail(e.target.value)}
@@ -600,11 +608,11 @@ const Donate = () => {
                           />
                         </div>
                         <div className="sm:col-span-2">
-                          <Label htmlFor="paystackPhone">
+                          <Label htmlFor="intasendPhone">
                             Phone <span className="text-muted-foreground font-normal">(optional)</span>
                           </Label>
                           <Input
-                            id="paystackPhone"
+                            id="intasendPhone"
                             value={donorPhone}
                             onChange={(e) => setDonorPhone(e.target.value)}
                             placeholder="+254 7XX XXX XXX"
@@ -614,39 +622,39 @@ const Donate = () => {
                       </div>
 
                       <Button
-                        onClick={handlePaystackPayment}
+                        onClick={handleIntasendPayment}
                         disabled={
-                          paystackStatus === "processing" || amount <= 0 || !donorEmail.trim()
+                          intasendStatus === "processing" || amount <= 0 || !donorEmail.trim()
                         }
                         size="lg"
                         className="w-full h-12 text-base"
                       >
-                        {paystackStatus === "processing" ? (
+                        {intasendStatus === "processing" ? (
                           <>
                             <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                            Redirecting to Paystack...
+                            Redirecting to IntaSend...
                           </>
                         ) : (
                           <>
                             <Wallet className="h-5 w-5 mr-2" />
-                            Pay {amount > 0 ? formatMoney(amount, currency) : ""} with Paystack
+                            Pay {amount > 0 ? formatMoney(amount, currency) : ""} with IntaSend
                           </>
                         )}
                       </Button>
 
                       <p className="text-xs text-center text-muted-foreground">
-                        Secured by Paystack · 256-bit SSL · PCI DSS compliant
+                        Secured by IntaSend · 256-bit SSL · PCI DSS compliant
                       </p>
 
-                      {paystackMessage && (
+                      {intasendMessage && (
                         <div
                           className={`rounded-lg border p-3 text-sm ${
-                            paystackStatus === "error"
+                            intasendStatus === "error"
                               ? "border-red-300 bg-red-50 text-red-900"
                               : "border-blue-300 bg-blue-50 text-blue-900"
                           }`}
                         >
-                          {paystackMessage}
+                          {intasendMessage}
                         </div>
                       )}
                     </div>

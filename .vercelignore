@@ -1,0 +1,17 @@
+node_modules
+server/node_modules
+dist
+server/dist
+dist.zip
+deploy-dist.zip
+*.log
+.git
+.github
+.lighthouseci
+.DS_Store
+bun.lockb
+src/assets/*.jpg
+src/assets/*.jpeg
+src/assets/*.png
+public/assets/
+.env*

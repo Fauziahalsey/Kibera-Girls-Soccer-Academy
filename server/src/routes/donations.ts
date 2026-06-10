@@ -1,11 +1,30 @@
 import { Router, Request, Response } from "express";
 
-const PAYSTACK_BASE_URL = "https://api.paystack.co";
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+const INTASEND_BASE_URL = "https://payment.intasend.com/api/v1";
+const INTASEND_PUBLIC_KEY = process.env.INTASEND_PUBLIC_KEY;
+const INTASEND_SECRET_KEY = process.env.INTASEND_SECRET_KEY;
 const FLUTTERWAVE_BASE_URL = "https://api.flutterwave.com/v3";
 const FLUTTERWAVE_SECRET_KEY = process.env.FLUTTERWAVE_SECRET_KEY;
 
 export const donationRoutes = Router();
+
+async function readProviderJson(response: globalThis.Response) {
+  const text = await response.text();
+
+  if (!text.trim()) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(
+      response.ok
+        ? "Payment provider returned an invalid response."
+        : `Payment provider returned an invalid response (${response.status}).`
+    );
+  }
+}
 
 // GET - Retrieve donation information
 donationRoutes.get("/", (req: Request, res: Response) => {
@@ -13,7 +32,7 @@ donationRoutes.get("/", (req: Request, res: Response) => {
     success: true,
     message: "Donation endpoint",
     data: {
-      acceptedPaymentMethods: ["mpesa", "bank", "paypal", "paystack", "flutterwave"],
+      acceptedPaymentMethods: ["mpesa", "bank", "paypal", "intasend", "flutterwave"],
       currency: "KES"
     }
   });
@@ -65,10 +84,10 @@ donationRoutes.post("/", async (req: Request, res: Response) => {
   }
 });
 
-// POST - Initialize Paystack payment
-donationRoutes.post("/paystack/initialize", async (req: Request, res: Response) => {
+// POST - Initialize IntaSend payment
+donationRoutes.post("/intasend/initialize", async (req: Request, res: Response) => {
   try {
-    const { amount, email, donorName, message } = req.body;
+    const { amount, currency, email, donorName, phone, callback_url } = req.body;
 
     if (!amount || amount <= 0) {
       res.status(400).json({
@@ -78,44 +97,57 @@ donationRoutes.post("/paystack/initialize", async (req: Request, res: Response) 
       return;
     }
 
-    if (!PAYSTACK_SECRET_KEY) {
-      res.status(500).json({
+    if (!email?.trim()) {
+      res.status(400).json({
         success: false,
-        message: "Paystack secret key is not configured"
+        message: "Email address is required for IntaSend payment."
       });
       return;
     }
 
-    const reference = `KGSA-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-    const emailToUse = email?.trim()
-      ? email.trim()
-      : `donation+${reference}@noreply.kiberagirlssocceracademy.co.ke`;
+    if (!INTASEND_PUBLIC_KEY || !INTASEND_SECRET_KEY) {
+      res.status(500).json({
+        success: false,
+        message: "IntaSend keys are not configured"
+      });
+      return;
+    }
+
+    const reference = `KGSA-IS-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    const nameParts = String(donorName || "").trim().split(/\s+/).filter(Boolean);
 
     const payload = {
-      email: emailToUse,
-      amount: Math.round(amount * 100),
-      currency: "KES",
-      reference,
-      metadata: {
-        donorName,
-        message
-      }
+      public_key: INTASEND_PUBLIC_KEY,
+      amount: Number(amount),
+      currency: String(currency || "KES").toUpperCase(),
+      email: email.trim(),
+      first_name: nameParts[0] || "Donor",
+      last_name: nameParts.slice(1).join(" ") || "Guest",
+      phone_number: phone?.trim() || undefined,
+      api_ref: reference,
+      redirect_url:
+        callback_url ||
+        `${process.env.FRONTEND_URL || "http://localhost:8080"}/donate/callback?provider=intasend`,
+      comment: "Donation to Kibera Girls Soccer Academy",
+      host: process.env.FRONTEND_URL || "http://localhost:8080"
     };
 
-    const response = await fetch(`${PAYSTACK_BASE_URL}/transaction/initialize`, {
+    const response = await fetch(`${INTASEND_BASE_URL}/checkout/`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+        Authorization: `Bearer ${INTASEND_SECRET_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify(payload)
     });
 
-    const data = await response.json();
-    if (!response.ok || !data.status) {
+    const data = await readProviderJson(response);
+    const checkoutUrl = data.url || data.redirect_url || data.checkout_url || data.invoice?.url;
+
+    if (!response.ok || !checkoutUrl) {
       res.status(response.status || 502).json({
         success: false,
-        message: data.message || "Paystack initialization failed",
+        message: data.message || data.detail || "IntaSend initialization failed",
         error: data
       });
       return;
@@ -123,80 +155,86 @@ donationRoutes.post("/paystack/initialize", async (req: Request, res: Response) 
 
     res.json({
       success: true,
-      message: "Paystack transaction initialized",
-      data: {
-        authorization_url: data.data.authorization_url,
-        access_code: data.data.access_code,
-        reference: data.data.reference,
-        amount: data.data.amount,
-        currency: data.data.currency
-      }
+      message: "IntaSend payment initialized",
+      checkout_url: checkoutUrl,
+      invoice_id: data.invoice_id || data.invoice?.invoice_id || data.invoice?.id || data.id,
+      api_ref: data.api_ref || reference
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Error initializing Paystack payment",
+      message: "Error initializing IntaSend payment",
       error: error instanceof Error ? error.message : "Unknown error"
     });
   }
 });
 
-// GET - Verify Paystack payment
-donationRoutes.get("/paystack/verify", async (req: Request, res: Response) => {
+// GET - Verify IntaSend payment
+donationRoutes.get("/intasend/verify", async (req: Request, res: Response) => {
   try {
-    const reference = String(req.query.reference ?? "");
+    const invoice_id = String(req.query.invoice_id ?? "");
+    const api_ref = String(req.query.api_ref ?? "");
 
-    if (!reference) {
+    if (!invoice_id && !api_ref) {
       res.status(400).json({
         success: false,
-        message: "Paystack reference is required"
+        message: "IntaSend invoice_id or api_ref is required"
       });
       return;
     }
 
-    if (!PAYSTACK_SECRET_KEY) {
+    if (!INTASEND_SECRET_KEY) {
       res.status(500).json({
         success: false,
-        message: "Paystack secret key is not configured"
+        message: "IntaSend secret key is not configured"
       });
       return;
     }
 
-    const response = await fetch(`${PAYSTACK_BASE_URL}/transaction/verify/${encodeURIComponent(reference)}`, {
-      method: "GET",
+    const response = await fetch(`${INTASEND_BASE_URL}/payment/status/`, {
+      method: "POST",
       headers: {
-        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+        Authorization: `Bearer ${INTASEND_SECRET_KEY}`,
         "Content-Type": "application/json"
-      }
+      },
+      body: JSON.stringify({
+        invoice_id: invoice_id || undefined,
+        api_ref: api_ref || undefined
+      })
     });
 
-    const data = await response.json();
-    if (!response.ok || !data.status) {
+    const data = await readProviderJson(response);
+    if (!response.ok) {
       res.status(response.status || 502).json({
         success: false,
-        message: data.message || "Paystack verification failed",
+        message: data.message || data.detail || "IntaSend verification failed",
         error: data
       });
       return;
     }
 
+    const invoice = data.invoice || data;
+    const paymentStatus = String(invoice.state || data.state || "");
+    const isCompleted = ["COMPLETE", "COMPLETED", "PAID", "SUCCESS", "SUCCESSFUL"].includes(
+      paymentStatus.toUpperCase()
+    );
+
     res.json({
-      success: true,
-      message: "Paystack payment verified",
+      success: isCompleted,
+      message: isCompleted ? "IntaSend payment verified" : `Payment status: ${paymentStatus || "unknown"}`,
       data: {
-        status: data.data.status,
-        reference: data.data.reference,
-        amount: data.data.amount,
-        currency: data.data.currency,
-        paidAt: data.data.paid_at,
-        channel: data.data.channel,
-        customer: data.data.customer
+        payment_status: paymentStatus,
+        reference: invoice.invoice_id || invoice.id || data.invoice_id || data.id || invoice_id || api_ref,
+        amount: invoice.amount ?? invoice.value ?? data.amount ?? data.value,
+        currency: invoice.currency || data.currency || "KES",
+        payment_method: invoice.provider || data.provider || "IntaSend",
+        api_ref
       }
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Error verifying Paystack payment",
+      message: "Error verifying IntaSend payment",
       error: error instanceof Error ? error.message : "Unknown error"
     });
   }

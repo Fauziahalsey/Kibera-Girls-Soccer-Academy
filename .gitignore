@@ -16,6 +16,9 @@ dist-ssr
 # Local deploy zip
 deploy-dist.zip
 
+# Vercel pulled env file
+.env.vercel
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -26,3 +29,4 @@ deploy-dist.zip
 *.njsproj
 *.sln
 *.sw?
+.vercel

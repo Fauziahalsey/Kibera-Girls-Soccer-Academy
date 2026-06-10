@@ -31,16 +31,16 @@ npm run dev
 
 ## Environment variables
 
-This app uses Paystack and Flutterwave for credit card donations. Create a `.env` file for the backend and use the sample values in `.env.example`.
+This app uses Pesapal, IntaSend, and Flutterwave-capable backend routes for donations. Create a `.env` file for the backend and use the sample values in `server/.env.example`.
 
-- `PAYSTACK_SECRET_KEY` — your Paystack secret key (backend only)
+- `INTASEND_PUBLIC_KEY` — your IntaSend public key (backend only)
+- `INTASEND_SECRET_KEY` — your IntaSend secret key (backend only)
 - `FLUTTERWAVE_SECRET_KEY` — your Flutterwave secret key (backend only)
 - `FRONTEND_URL` — e.g. `http://localhost:8080`
-- `VITE_PAYSTACK_PUBLIC_KEY` — your Paystack public key for the frontend
 - `VITE_FLUTTERWAVE_PUBLIC_KEY` — your Flutterwave public key for the frontend
 - `VITE_API_BASE_URL` — the backend API URL, e.g. `http://localhost:3000`
 
-Make sure the backend is running separately on the configured API URL when testing card payments.
+For Vercel deployments, set the IntaSend keys in the project environment variables so the serverless API can create checkout links. Keep the IntaSend settlement bank account configured in the IntaSend dashboard for the school account.
 
 **Edit a file directly in GitHub**
 
@@ -96,4 +96,3 @@ npm run build
 ```
 
 2. Upload the contents of `dist/` to your cPanel document root (e.g., `public_html/`), and ensure `.htaccess` and `index.html` are present.
-
