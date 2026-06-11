@@ -6,6 +6,18 @@ const INTASEND_SECRET_KEY = process.env.INTASEND_SECRET_KEY;
 const FLUTTERWAVE_BASE_URL = "https://api.flutterwave.com/v3";
 const FLUTTERWAVE_SECRET_KEY = process.env.FLUTTERWAVE_SECRET_KEY;
 
+const INTASEND_COUNTRY_MAP: Record<string, string> = {
+  KES: "KE",
+  USD: "US",
+  EUR: "EU",
+  GBP: "GB",
+  INR: "IN",
+};
+
+function getIntasendCountry(currency?: string): string {
+  return INTASEND_COUNTRY_MAP[(currency || "KES").toUpperCase()] || "KE";
+}
+
 export const donationRoutes = Router();
 
 async function readProviderJson(response: globalThis.Response) {
@@ -129,7 +141,8 @@ donationRoutes.post("/intasend/initialize", async (req: Request, res: Response) 
         callback_url ||
         `${process.env.FRONTEND_URL || "http://localhost:8080"}/donate/callback?provider=intasend`,
       comment: "Donation to Kibera Girls Soccer Academy",
-      host: process.env.FRONTEND_URL || "http://localhost:8080"
+      host: process.env.FRONTEND_URL || "http://localhost:8080",
+      country: getIntasendCountry(currency),
     };
 
     const response = await fetch(`${INTASEND_BASE_URL}/checkout/`, {

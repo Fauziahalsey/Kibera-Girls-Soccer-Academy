@@ -57,6 +57,12 @@ function getPublicKey(): string {
   return INTASEND_PUBLIC_KEY.trim();
 }
 
+function getCountryCode(currency?: string): string {
+  const code = (currency || "KES").toUpperCase();
+  const map: Record<string, string> = { KES: "KE", USD: "US", EUR: "EU", GBP: "GB", INR: "IN" };
+  return map[code] || "KE";
+}
+
 function getSecretKey(): string {
   if (!INTASEND_SECRET_KEY?.trim()) {
     throw new Error(
@@ -145,6 +151,7 @@ export async function initializeIntaSendPayment(body: {
     redirect_url: body.callback_url || `${FRONTEND_URL}/donate/callback?provider=intasend`,
     comment: "Donation to Kibera Girls Soccer Academy",
     host: "https://www.kiberagirlssocceracademy.co.ke",
+    country: getCountryCode(currency),
   };
 
   const response = await fetch(`${INTASEND_BASE_URL}/checkout/`, {
