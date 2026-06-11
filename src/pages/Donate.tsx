@@ -551,6 +551,7 @@ const Donate = () => {
                         )}
                       </Button>
 
+
                       <p className="text-xs text-center text-muted-foreground">
                         256-bit SSL · 3D Secure · PCI DSS compliant
                       </p>
