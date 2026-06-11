@@ -1,17 +1,13 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "api/health.ts", "use": "@vercel/node", "config": { "nodeVersion": "22.x" } },
-    { "src": "api/donations/intasend/verify.ts", "use": "@vercel/node", "config": { "nodeVersion": "22.x" } },
-    { "src": "api/donations/intasend/initialize.ts", "use": "@vercel/node", "config": { "nodeVersion": "22.x" } },
-    { "src": "api/donations/paystack/initialize.ts", "use": "@vercel/node", "config": { "nodeVersion": "22.x" } },
-    { "src": "api/donations/paystack/verify.ts", "use": "@vercel/node", "config": { "nodeVersion": "22.x" } },
-    { "src": "api/donations/pesapal/initialize.ts", "use": "@vercel/node", "config": { "nodeVersion": "22.x" } },
-    { "src": "api/donations/pesapal/verify.ts", "use": "@vercel/node", "config": { "nodeVersion": "22.x" } },
-    { "src": "api/donations/pesapal/register-ipn.ts", "use": "@vercel/node", "config": { "nodeVersion": "22.x" } },
-    { "src": "api/donations/pesapal/ipn.ts", "use": "@vercel/node", "config": { "nodeVersion": "22.x" } },
-    { "src": "package.json", "use": "@vercel/static-build", "config": { "buildCommand": "npm run build:frontend", "distDir": "dist", "nodeVersion": "22.x" } }
-  ],
+  "env": {
+    "NODE_VERSION": "22.x"
+  },
+  "build": {
+    "env": {
+      "NODE_VERSION": "22.x"
+    }
+  },
   "routes": [
     { "handle": "filesystem" },
     { "src": "/api/(.*)", "dest": "/api/$1" },
