@@ -149,6 +149,7 @@ export async function initializeIntaSendPayment(body: {
   const { firstName, lastName } = splitName(body.donorName);
 
   const payload = {
+    public_key: getPublicKey(),
     amount,
     currency,
     email,
