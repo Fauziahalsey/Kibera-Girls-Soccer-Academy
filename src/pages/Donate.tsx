@@ -268,6 +268,7 @@ const Donate = () => {
   ];
 
   const isPesapalLimited = selectedPaymentMethod === "Credit Card" && cardMax !== null;
+  const isIntasendBlocked = currency !== "KES";
 
   const amount = getDonationAmount();
 
@@ -579,10 +580,18 @@ const Donate = () => {
                           <p className="font-semibold">Pay securely with IntaSend</p>
                           <p className="text-sm text-muted-foreground mt-1">
                             Pay by card, M-Pesa, or bank on IntaSend&apos;s secure checkout page.
-                            Supports larger donations in {currency}.
+                            KES only for IntaSend.
                           </p>
                         </div>
                       </div>
+
+                      {isIntasendBlocked && (
+                        <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                          IntaSend currently only supports Kenyan Shilling (KES). Please switch to KES
+                          currency above to use IntaSend, or choose bank transfer / credit card for USD
+                          or EUR.
+                        </div>
+                      )}
 
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="sm:col-span-2">
@@ -625,7 +634,10 @@ const Donate = () => {
                       <Button
                         onClick={handleIntasendPayment}
                         disabled={
-                          intasendStatus === "processing" || amount <= 0 || !donorEmail.trim()
+                          intasendStatus === "processing" ||
+                          amount <= 0 ||
+                          !donorEmail.trim() ||
+                          isIntasendBlocked
                         }
                         size="lg"
                         className="w-full h-12 text-base"
@@ -634,6 +646,11 @@ const Donate = () => {
                           <>
                             <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                             Redirecting to IntaSend...
+                          </>
+                        ) : isIntasendBlocked ? (
+                          <>
+                            <Wallet className="h-5 w-5 mr-2" />
+                            IntaSend only supports KES
                           </>
                         ) : (
                           <>
