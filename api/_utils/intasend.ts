@@ -1,7 +1,11 @@
 const INTASEND_BASE_URL = "https://payment.intasend.com/api/v1";
 const INTASEND_PUBLIC_KEY = process.env.INTASEND_PUBLIC_KEY;
 const INTASEND_SECRET_KEY = process.env.INTASEND_SECRET_KEY;
-const FRONTEND_URL = "https://www.kiberagirlssocceracademy.co.ke";
+const FRONTEND_URL =
+  (process.env.FRONTEND_URL as string | undefined)?.trim() ||
+  "https://www.kiberagirlssocceracademy.co.ke";
+
+const INTASEND_SUPPORTED_CURRENCIES = new Set(["KES", "GHS", "NGN", "UGX", "TZS", "XAF", "XOF"]);
 
 interface IntaSendCheckoutResponse {
   url?: string;
@@ -136,11 +140,15 @@ export async function initializeIntaSendPayment(body: {
   }
 
   const currency = (body.currency || "KES").toUpperCase();
+  if (!INTASEND_SUPPORTED_CURRENCIES.has(currency)) {
+    throw new Error(
+      `IntaSend does not support ${currency} on live accounts. Supported currencies: KES, GHS, NGN, UGX, TZS, XAF, XOF.`
+    );
+  }
   const reference = createReference();
   const { firstName, lastName } = splitName(body.donorName);
 
   const payload = {
-    public_key: getPublicKey(),
     amount,
     currency,
     email,
@@ -150,14 +158,13 @@ export async function initializeIntaSendPayment(body: {
     api_ref: reference,
     redirect_url: body.callback_url || `${FRONTEND_URL}/donate/callback?provider=intasend`,
     comment: "Donation to Kibera Girls Soccer Academy",
-    host: "https://www.kiberagirlssocceracademy.co.ke",
     country: getCountryCode(currency),
   };
 
   const response = await fetch(`${INTASEND_BASE_URL}/checkout/`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${getSecretKey()}`,
+      "X-IntaSend-Public-API-Key": getPublicKey(),
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
@@ -167,8 +174,18 @@ export async function initializeIntaSendPayment(body: {
   const checkoutUrl = getCheckoutUrl(data);
 
   if (!response.ok || !checkoutUrl) {
-    console.error("IntaSend initialize failed:", data);
-    throw new Error(getErrorMessage(data, "IntaSend rejected the payment request."));
+    console.error("IntaSend initialize failed:", { status: response.status, body: data });
+    let detail = "";
+    if (data && typeof data === "object") {
+      if (typeof data.detail === "string") detail = data.detail;
+      else if (typeof data.message === "string") detail = data.message;
+      else if (Array.isArray(data.errors)) detail = data.errors.map((e) => typeof e === "string" ? e : JSON.stringify(e)).join("; ");
+      else if (typeof data.errors === "object") detail = JSON.stringify(data.errors);
+      else detail = JSON.stringify(data);
+    }
+    throw new Error(
+      `IntaSend rejected the payment request (${response.status}): ${detail || "Unknown error"}`
+    );
   }
 
   return {
@@ -189,7 +206,7 @@ export async function verifyIntaSendPayment(params: { invoice_id?: string; api_r
   const response = await fetch(`${INTASEND_BASE_URL}/payment/status/`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${getSecretKey()}`,
+      "X-IntaSend-Public-API-Key": getPublicKey(),
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
